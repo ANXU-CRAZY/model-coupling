@@ -1,0 +1,12 @@
+{
+  "status": "BASELINE_RESEARCH_SCORES",
+  "rows": 480,
+  "method": "geometric",
+  "alpha": 0.5,
+  "gamma": 0.5,
+  "m_high": 0.7,
+  "h_high": 0.7,
+  "deficit_mode": "low_hq",
+  "input_sha256": "578a9c341c37e19883e1dc9b9a86b7d202a260eb494472d9193cec95078586ae",
+  "uncertainty": "NOT_PROPAGATED_IN_POINT_BASELINE"
+}

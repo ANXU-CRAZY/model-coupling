@@ -1,0 +1,454 @@
+{
+  "status": "SYNTHETIC_DEMO_ONLY",
+  "best_epoch": 128,
+  "epochs_run": 168,
+  "active_heads": [
+    true,
+    true
+  ],
+  "independent_ecological_validation": false,
+  "audit": {
+    "status": "DECLARED_PROVENANCE_PASS",
+    "rows": 480,
+    "roles": {
+      "train": 288,
+      "validation": 96,
+      "test": 96
+    },
+    "test_scope": "spatiotemporal",
+    "caveat": "Declarations require external fitting-log verification; this is not ecological validation."
+  },
+  "metrics": {
+    "train": {
+      "M_only_component": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.17905961433906287,
+          "mae": 0.15410589607295722,
+          "spearman": 0.8942347446575104
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.14946048817836266,
+          "mae": 0.11784514039900952,
+          "spearman": 0.850724669536888
+        }
+      },
+      "HQ_only_component": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.2948434237359945,
+          "mae": 0.24161178673501707,
+          "spearman": 0.24581461637144933
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.22586247219841046,
+          "mae": 0.18068009426811005,
+          "spearman": 0.3213128336802099
+        }
+      },
+      "relative_degradation_geometric_050": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.16975601334100862,
+          "mae": 0.14371365080170762,
+          "spearman": 0.8017927096205665
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.10567366976826538,
+          "mae": 0.07787042868367303,
+          "spearman": 0.8021149104153469
+        }
+      },
+      "fixed_geometric_050": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.16975601334100862,
+          "mae": 0.14371365080170762,
+          "spearman": 0.8017927096205665
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.10567366976826538,
+          "mae": 0.07787042868367303,
+          "spearman": 0.8021149104153469
+        }
+      },
+      "fixed_linear_050": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.18574312494728087,
+          "mae": 0.15424933789913453,
+          "spearman": 0.8158777826987228
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.09351163795090506,
+          "mae": 0.07185279377856425,
+          "spearman": 0.858508986743281
+        }
+      },
+      "fitted_constant_geometric": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.15063025631188443,
+          "mae": 0.12980416608497233,
+          "spearman": 0.9131440588023192
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.08522421302897384,
+          "mae": 0.06344867859575601,
+          "spearman": 0.8975078612795222
+        }
+      },
+      "fitted_constant_linear": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.16423375654247177,
+          "mae": 0.14697975861548754,
+          "spearman": 0.9258878398796666
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.0830932850695122,
+          "mae": 0.06637145735149481,
+          "spearman": 0.9155379038096098
+        }
+      },
+      "minimum": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.14743194922779684,
+          "mae": 0.12020893895902779,
+          "spearman": 0.7144598705773264
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.16526943833649793,
+          "mae": 0.12002205808153855,
+          "spearman": 0.6868291048321419
+        }
+      },
+      "dual_gate": {
+        "target_protection": {
+          "n": 288,
+          "rmse": 0.11550337126462865,
+          "mae": 0.09386453437956359,
+          "spearman": 0.9021012570188813
+        },
+        "target_restoration": {
+          "n": 257,
+          "rmse": 0.06640775409143933,
+          "mae": 0.048811583844585296,
+          "spearman": 0.9260389331282235
+        }
+      }
+    },
+    "validation": {
+      "M_only_component": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.18553617587972074,
+          "mae": 0.1591011106446031,
+          "spearman": 0.8702281274742373
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.17143853699712047,
+          "mae": 0.13564744752354682,
+          "spearman": 0.7881416970956043
+        }
+      },
+      "HQ_only_component": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.30332800866038334,
+          "mae": 0.2453854423961326,
+          "spearman": 0.17882528486163862
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.1961745452874107,
+          "mae": 0.1501280451575494,
+          "spearman": 0.45939004815409307
+        }
+      },
+      "relative_degradation_geometric_050": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.1841924611925379,
+          "mae": 0.1542062691551145,
+          "spearman": 0.730127509495388
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.10412275264257054,
+          "mae": 0.08392682932524552,
+          "spearman": 0.8140346544840925
+        }
+      },
+      "fixed_geometric_050": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.1841924611925379,
+          "mae": 0.1542062691551145,
+          "spearman": 0.730127509495388
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.10412275264257054,
+          "mae": 0.08392682932524552,
+          "spearman": 0.8140346544840925
+        }
+      },
+      "fixed_linear_050": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.19762314430709363,
+          "mae": 0.16716793203030225,
+          "spearman": 0.7454693434617472
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.08518637108197007,
+          "mae": 0.0712159207606473,
+          "spearman": 0.8918055727044492
+        }
+      },
+      "fitted_constant_geometric": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.16418910453044358,
+          "mae": 0.1440567324728191,
+          "spearman": 0.8596852957135106
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.09059385410788971,
+          "mae": 0.06752179604241214,
+          "spearman": 0.8809729596246448
+        }
+      },
+      "fitted_constant_linear": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.17473029522164552,
+          "mae": 0.15469162765751715,
+          "spearman": 0.8890531741725448
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.08858523622706654,
+          "mae": 0.07065849541350412,
+          "spearman": 0.910194674239618
+        }
+      },
+      "minimum": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.14940025947967653,
+          "mae": 0.1199527867360476,
+          "spearman": 0.6771161150298426
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.17302182647155434,
+          "mae": 0.11979100720773612,
+          "spearman": 0.6165781783759311
+        }
+      },
+      "dual_gate": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.12534551144465267,
+          "mae": 0.1024610859119014,
+          "spearman": 0.8631985892566468
+        },
+        "target_restoration": {
+          "n": 90,
+          "rmse": 0.07885564076832893,
+          "mae": 0.06472128459114111,
+          "spearman": 0.900415689179734
+        }
+      }
+    },
+    "test": {
+      "M_only_component": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.1687363544535939,
+          "mae": 0.14326548931175007,
+          "spearman": 0.9108777927831093
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.15126345848005196,
+          "mae": 0.12320399861323876,
+          "spearman": 0.8426442898967144
+        }
+      },
+      "HQ_only_component": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.33271510135710386,
+          "mae": 0.274933749036313,
+          "spearman": 0.2564739077000439
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.23823481134837446,
+          "mae": 0.19674197021938736,
+          "spearman": 0.3032727114419739
+        }
+      },
+      "relative_degradation_geometric_050": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.1923613363794413,
+          "mae": 0.16747517212795252,
+          "spearman": 0.7795819260338247
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.11730000799521391,
+          "mae": 0.0925695764350843,
+          "spearman": 0.7700939258388568
+        }
+      },
+      "fixed_geometric_050": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.1923613363794413,
+          "mae": 0.16747517212795252,
+          "spearman": 0.7795819260338247
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.11730000799521391,
+          "mae": 0.0925695764350843,
+          "spearman": 0.7700939258388568
+        }
+      },
+      "fixed_linear_050": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.2116732276863393,
+          "mae": 0.1820628625327313,
+          "spearman": 0.7707510954465963
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.09804347869177779,
+          "mae": 0.08331931283101983,
+          "spearman": 0.8467147723686071
+        }
+      },
+      "fitted_constant_geometric": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.16085870463978708,
+          "mae": 0.14308102810935117,
+          "spearman": 0.9021283523395419
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.09414927213514733,
+          "mae": 0.07392257321759327,
+          "spearman": 0.8931226260053766
+        }
+      },
+      "fitted_constant_linear": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.17235456285869027,
+          "mae": 0.15479399770407454,
+          "spearman": 0.9256907989294281
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.08517691569616173,
+          "mae": 0.06770284216089717,
+          "spearman": 0.9193304382843024
+        }
+      },
+      "minimum": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.1452255181293601,
+          "mae": 0.1176426574183942,
+          "spearman": 0.7407316974595968
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.17495954716604328,
+          "mae": 0.12796479045545833,
+          "spearman": 0.6637171994209902
+        }
+      },
+      "dual_gate": {
+        "target_protection": {
+          "n": 96,
+          "rmse": 0.1276044742686417,
+          "mae": 0.10758210861700272,
+          "spearman": 0.8916832839030352
+        },
+        "target_restoration": {
+          "n": 82,
+          "rmse": 0.08422633354801261,
+          "mae": 0.0684260817191363,
+          "spearman": 0.9015683329524059
+        }
+      }
+    }
+  },
+  "fitted_constant_geometric": [
+    0.7385682012447384,
+    0.7030885338745629
+  ],
+  "fitted_constant_linear": [
+    0.7743845690575505,
+    0.6283281977570576
+  ],
+  "score_envelope": {
+    "target_protection": {
+      "n": 480,
+      "outside_feasible_score_envelope_fraction": 0.69375,
+      "minimum_possible_rmse": 0.11178764237920147
+    },
+    "target_restoration": {
+      "n": 429,
+      "outside_feasible_score_envelope_fraction": 0.3613053613053613,
+      "minimum_possible_rmse": 0.04112173326097589
+    }
+  },
+  "config": {
+    "seed": 42,
+    "width": 32,
+    "dropout": 0.1,
+    "min_weight": 0.1,
+    "learning_rate": 0.003,
+    "weight_decay": 0.001,
+    "gate_prior_strength": 0.001,
+    "epochs": 300,
+    "patience": 40,
+    "min_train_labels": 20,
+    "min_val_labels": 5
+  },
+  "model_config": {
+    "n_features": 6,
+    "width": 32,
+    "dropout": 0.1,
+    "min_weight": 0.1,
+    "active_heads": [
+      true,
+      true
+    ]
+  },
+  "input_sha256": "578a9c341c37e19883e1dc9b9a86b7d202a260eb494472d9193cec95078586ae",
+  "provenance_sha256": "342ae7344991de5b47e5e6b885e7ce42b6f100d01957ed609deaf2d845915227",
+  "gate_interpretation": "Statistical allocation conditional on input scaling and calibration; not causal ecology.",
+  "uncertainty": "Input ensemble SD features only; no predictive interval is claimed."
+}

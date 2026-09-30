@@ -1,0 +1,16 @@
+{
+  "status": "pending_evidence",
+  "target_invest_version": "3.16.1",
+  "distance_unit": "m",
+  "fixed_half_saturation_constant": null,
+  "comment": "Null bounds deliberately prevent unsupported parameter sampling. Fill local evidence and use status=evidence_reviewed after documented team review.",
+  "parameters": [
+    {"key": "weight:urban", "low": null, "high": null, "evidence": null},
+    {"key": "weight:human", "low": null, "high": null, "evidence": null},
+    {"key": "weight:light", "low": null, "high": null, "evidence": null},
+    {"key": "distance:urban", "low": null, "high": null, "evidence": null},
+    {"key": "distance:human", "low": null, "high": null, "evidence": null},
+    {"key": "distance:light", "low": null, "high": null, "evidence": null},
+    {"key": "half_saturation_constant", "low": null, "high": null, "evidence": null}
+  ]
+}

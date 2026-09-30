@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wetland-coupling"
+version = "0.1.0"
+description = "Auditable MaxEnt–InVEST protection/restoration candidate coupling foundation"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24,<3", "pandas>=2.0,<3", "scipy>=1.10,<2", "torch>=2.5,<3", "rasterio>=1.4,<2"]
+
+[project.scripts]
+wetland-coupling = "wetland_coupling.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["wetland_coupling*"]

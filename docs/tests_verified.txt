@@ -1,0 +1,35 @@
+test_bounded_gate_head_and_gradient (test_contracts.Fixtures.test_bounded_gate_head_and_gradient) ... ok
+test_declared_provenance_pass (test_contracts.Fixtures.test_declared_provenance_pass) ... ok
+test_duplicate_sampling_unit_rejected (test_contracts.Fixtures.test_duplicate_sampling_unit_rejected) ... ok
+test_fold_group_leak_rejected_even_if_id_missing (test_contracts.Fixtures.test_fold_group_leak_rejected_even_if_id_missing) ... ok
+test_fusion_pseudolabel_rejected (test_contracts.Fixtures.test_fusion_pseudolabel_rejected) ... ok
+test_gate_gradient_matches_finite_difference (test_contracts.Fixtures.test_gate_gradient_matches_finite_difference) ... ok
+test_gate_validation_leak_rejected (test_contracts.Fixtures.test_gate_validation_leak_rejected) ... ok
+test_inactive_head_is_fixed_half (test_contracts.Fixtures.test_inactive_head_is_fixed_half) ... ok
+test_missing_restoration_supervision_keeps_head_untrained (test_contracts.Fixtures.test_missing_restoration_supervision_keeps_head_untrained) ... ok
+test_mixed_maxent_scale_rejected (test_contracts.Fixtures.test_mixed_maxent_scale_rejected) ... ok
+test_nested_plan_excludes_gate_validation_and_test (test_contracts.Fixtures.test_nested_plan_excludes_gate_validation_and_test) ... ok
+test_raster_real_file_alignment_and_nodata (test_contracts.Fixtures.test_raster_real_file_alignment_and_nodata) ... ok
+test_raster_shift_rejected (test_contracts.Fixtures.test_raster_shift_rejected) ... ok
+test_synthetic_not_used_as_real (test_contracts.Fixtures.test_synthetic_not_used_as_real) ... ok
+test_train_save_reload_and_uncertainty (test_contracts.Fixtures.test_train_save_reload_and_uncertainty) ... ok
+test_geometry_shortfall_bounds (test_contracts.FusionContracts.test_geometry_shortfall_bounds) ... ok
+test_geometry_vs_linear_and_repair (test_contracts.FusionContracts.test_geometry_vs_linear_and_repair) ... ok
+test_intrinsically_low_suitability_is_not_degradation (test_contracts.FusionContracts.test_intrinsically_low_suitability_is_not_degradation) ... ok
+test_invalid_values_rejected (test_contracts.FusionContracts.test_invalid_values_rejected) ... ok
+test_management_quadrants_and_review (test_contracts.FusionContracts.test_management_quadrants_and_review) ... ok
+test_nodata_is_not_zero_quality (test_contracts.FusionContracts.test_nodata_is_not_zero_quality) ... ok
+test_restoration_requires_explicit_masks (test_contracts.FusionContracts.test_restoration_requires_explicit_masks) ... ok
+test_uncertainty_incomplete_members_fail_closed (test_contracts.FusionContracts.test_uncertainty_incomplete_members_fail_closed) ... ok
+test_uncertainty_is_propagated_not_mean_fused (test_contracts.FusionContracts.test_uncertainty_is_propagated_not_mean_fused) ... ok
+test_zero_and_endpoint_weights (test_contracts.FusionContracts.test_zero_and_endpoint_weights) ... ok
+test_candidate_calibration_uses_identical_inner_folds (test_contracts.ParameterContracts.test_candidate_calibration_uses_identical_inner_folds) ... ok
+test_final_test_cannot_select_invest_parameters (test_contracts.ParameterContracts.test_final_test_cannot_select_invest_parameters) ... ok
+test_missing_evidence_blocks_prior (test_contracts.ParameterContracts.test_missing_evidence_blocks_prior) ... ok
+test_prior_samples_repeatable_and_metres_only (test_contracts.ParameterContracts.test_prior_samples_repeatable_and_metres_only) ... ok
+test_run_plan_keeps_metres_and_resolves_original_threat_paths (test_contracts.ParameterContracts.test_run_plan_keeps_metres_and_resolves_original_threat_paths) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 3.342s
+
+OK

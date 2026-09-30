@@ -1,0 +1,236 @@
+{
+  "version": "0.1.0",
+  "scientific_status": "ENGINEERING_VALIDATED_REAL_DATA_NOT_CONNECTED",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "c9a1703c986f6ebdff2520b279ae43c4155b683bcc831eaa1b25f1d4b0f3303b",
+      "bytes": 6277
+    },
+    {
+      "path": "configs/gate.json",
+      "sha256": "cc06a464182902fd99d858a77deae1186ccff45a0b879a3389c97fdb8f416433",
+      "bytes": 238
+    },
+    {
+      "path": "configs/invest_prior.pending.json",
+      "sha256": "98eb38f6fb1c2216c8deef2967a8084ca8925963218dce59dc373e06ebfb2588",
+      "bytes": 860
+    },
+    {
+      "path": "docs/runtime_verified.json",
+      "sha256": "3cad07162a6ce60332628eea8ec6949b8ac9457afdd0ecb6b033b9bf26816ca5",
+      "bytes": 447
+    },
+    {
+      "path": "docs/tests_verified.txt",
+      "sha256": "e6b98b63829ee17f9d236ab80c26b4b44fc1a3d78997b202eeefa94e8735f72e",
+      "bytes": 3631
+    },
+    {
+      "path": "docs/数据接入说明.md",
+      "sha256": "1101c7ee67bdfaf1f109caf72864cfec35d96286a174e4a40b82c8a0badafc32",
+      "bytes": 7266
+    },
+    {
+      "path": "docs/文献与建模决策.md",
+      "sha256": "df71671248de31b9d6b651d3755a34bc36f372c719e03dd45aaad44546999696",
+      "bytes": 14065
+    },
+    {
+      "path": "docs/验收记录.md",
+      "sha256": "ff13299c01922779e9fe6cd811cb201dc6f32dd60eca28ef1fcc0f1986d4fa01",
+      "bytes": 2702
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "1460869aa655c1ac556aa63031ad064122b196c95904c55800a4d23fd3bf9777",
+      "bytes": 500
+    },
+    {
+      "path": "runs/demo_001/base_crossfit_plan.json",
+      "sha256": "be8a17d7caf8a53811d42c0ce39204817e1081ccb704094bb66816b7441a489d",
+      "bytes": 367010
+    },
+    {
+      "path": "runs/demo_001/fixed_csv/manifest.json",
+      "sha256": "ababe3eaf5b49c2630dfdc62c52a3884d07dafbe971faad2fc5004cac9f0e041",
+      "bytes": 315
+    },
+    {
+      "path": "runs/demo_001/fixed_csv/scores.csv",
+      "sha256": "cb967f827eaaeabd03d259ba82d754122b565b1b4119e144844a196fd5695530",
+      "bytes": 93543
+    },
+    {
+      "path": "runs/demo_001/gate/gate.pt",
+      "sha256": "9c0e1ec6c9de327f4b2a7a6b83c624d755872a8b12b5637b2e4a97eb8d2e9330",
+      "bytes": 14594
+    },
+    {
+      "path": "runs/demo_001/gate/predictions.csv",
+      "sha256": "18c84d25b29ce0ec2a83c91ef13e2a672917c661424ec40fbc104487eed18cb3",
+      "bytes": 54085
+    },
+    {
+      "path": "runs/demo_001/gate/report.json",
+      "sha256": "5670285c670e8ceac95dc6c4c615ebcaf40126b39b63d13f2802d9c7f2fde9b9",
+      "bytes": 12614
+    },
+    {
+      "path": "runs/demo_001/gate/training_history.csv",
+      "sha256": "08aa1d37b1733c1eb6597e2064f07afe44a46b009f8b186d5c4d38be1ea68462",
+      "bytes": 7587
+    },
+    {
+      "path": "runs/demo_001/input/provenance.json",
+      "sha256": "342ae7344991de5b47e5e6b885e7ce42b6f100d01957ed609deaf2d845915227",
+      "bytes": 168466
+    },
+    {
+      "path": "runs/demo_001/input/raster_inputs/feasible.tif",
+      "sha256": "c7db67a9368e0cce1c885712d032025c1777fac29306b019191c33cbc104a7d6",
+      "bytes": 968
+    },
+    {
+      "path": "runs/demo_001/input/raster_inputs/h.tif",
+      "sha256": "730ce552541df62097595c412567f5cf8433ecef594b1606f3b9ca5c3adc461e",
+      "bytes": 5182
+    },
+    {
+      "path": "runs/demo_001/input/raster_inputs/habitat_suitability.tif",
+      "sha256": "6f8d914adfc999ea70977e5f50817b0617b6b23f20ffbbbe0f4c437b0f00d1e9",
+      "bytes": 966
+    },
+    {
+      "path": "runs/demo_001/input/raster_inputs/m.tif",
+      "sha256": "98f65c082891e9f57a7b8d06244ca2973193de5e2e34bd7e70d07e43aab66ceb",
+      "bytes": 5378
+    },
+    {
+      "path": "runs/demo_001/input/samples.csv",
+      "sha256": "578a9c341c37e19883e1dc9b9a86b7d202a260eb494472d9193cec95078586ae",
+      "bytes": 73029
+    },
+    {
+      "path": "runs/demo_001/raster_baseline/conservation_score.tif",
+      "sha256": "1dafd115080359b4d8eaec7946928078ff277f23b8721ce14b110052aca7d9ee",
+      "bytes": 4848
+    },
+    {
+      "path": "runs/demo_001/raster_baseline/management_reference_zones.tif",
+      "sha256": "eeba6e7ea38ab931459b1fcc8966e0bd2265c9d45e2f412765e2bb7477cf56de",
+      "bytes": 819
+    },
+    {
+      "path": "runs/demo_001/raster_baseline/manifest.json",
+      "sha256": "8f4f395393a5d0a38c8cac6f5a3604a3c1d5e848d6bb0f313776e1f60634a548",
+      "bytes": 1935
+    },
+    {
+      "path": "runs/demo_001/raster_baseline/restoration_candidate_score.tif",
+      "sha256": "6fcfbfb1e4f082ffa81b0dcc2005045b2841b75811a31a2ba37e99eb097cc677",
+      "bytes": 4747
+    },
+    {
+      "path": "runs/demo_001/reloaded_prediction/manifest.json",
+      "sha256": "601eed4067262381263d30010306e08e4156a4dffa100f63f7a97d3f54cb78e3",
+      "bytes": 273
+    },
+    {
+      "path": "runs/demo_001/reloaded_prediction/predictions.csv",
+      "sha256": "4cbbe915f649d75f7bf2bfc932008555e00eccb9d8b775840fd805a88e8e5650",
+      "bytes": 102562
+    },
+    {
+      "path": "scripts/run_demo.py",
+      "sha256": "f438f37ebf28dbb06160c09fd1b9629536b34e909046b10234a7218f0d05bff8",
+      "bytes": 1482
+    },
+    {
+      "path": "templates/calibration_scores.csv",
+      "sha256": "b5ec7293c8b19f47f2fe91de292025269b7549ac7b67395cca92cd9567775b1f",
+      "bytes": 56
+    },
+    {
+      "path": "templates/parameter_evidence.csv",
+      "sha256": "8c0403139baa2d50bd45c86ee3ec0e8afcfc2ca19fa0b97bb24f15a2a4d2871e",
+      "bytes": 157
+    },
+    {
+      "path": "templates/samples.csv",
+      "sha256": "e518804bd94aa4e06de6b1040ba68a4fd50ce8d9e4413068ab190515b724fa48",
+      "bytes": 150
+    },
+    {
+      "path": "templates/sensitivity.csv",
+      "sha256": "45ae077858d254f8901f41ee69c5ee50b95273296425c9c8aa6695657c6584b5",
+      "bytes": 38
+    },
+    {
+      "path": "templates/threats.csv",
+      "sha256": "e06ee8f0bd9a0d42370e2aaab41aeb38dbdfd9b3376f49d47b4a2f491ce07b35",
+      "bytes": 57
+    },
+    {
+      "path": "tests/test_contracts.py",
+      "sha256": "1e03c4fba8e7ef1ffc24610a4ace006fca9c67911e119d793a73b1f7fc5fb7a5",
+      "bytes": 14118
+    },
+    {
+      "path": "wetland_coupling/__init__.py",
+      "sha256": "e51166367b9db43e79cf44eb9faf303684fcf93ae07f9b242c255436a2849e60",
+      "bytes": 98
+    },
+    {
+      "path": "wetland_coupling/__main__.py",
+      "sha256": "cf7390a2508a0fcad4777a4a629fc5212ab655cb45845975995f835676a834e3",
+      "bytes": 29
+    },
+    {
+      "path": "wetland_coupling/audit.py",
+      "sha256": "42c045852de505e5965f8f02d8d88244e46e8b6a880b01d3e9aa83b36eba5fa5",
+      "bytes": 8520
+    },
+    {
+      "path": "wetland_coupling/cli.py",
+      "sha256": "da8dde678a9b4510d65c5ace9ce07b35de4b2803baf08dba8fa59dcf9296954d",
+      "bytes": 6905
+    },
+    {
+      "path": "wetland_coupling/demo.py",
+      "sha256": "c7f8c14b09d722e7943e3bdf9fc676b7e5ec06edffc995aa8044fbf48c841250",
+      "bytes": 4683
+    },
+    {
+      "path": "wetland_coupling/fusion.py",
+      "sha256": "e5a1c6d68523267e7a29e5749fa8fd09351dc8f2e521072941c8f6be17874d80",
+      "bytes": 6951
+    },
+    {
+      "path": "wetland_coupling/model.py",
+      "sha256": "9ac743cec8acd6bdef92d8f2c96fa00bae50235922f62021961b3f0aef910b00",
+      "bytes": 2065
+    },
+    {
+      "path": "wetland_coupling/parameters.py",
+      "sha256": "e9fdba85d7936a18d420d0e8384c9a9a7ac53d6380795dfc7fa32eb94a6aff77",
+      "bytes": 9567
+    },
+    {
+      "path": "wetland_coupling/rasters.py",
+      "sha256": "00340df0200c272a9855f068cbc557fa4bdc84518ec4bd7c8080adce90f2ba1b",
+      "bytes": 5244
+    },
+    {
+      "path": "wetland_coupling/splits.py",
+      "sha256": "d4dd4c4a630ecd8a41e1b0eda695ad31dd08e717b79f2ed77bf117af7a03657d",
+      "bytes": 3358
+    },
+    {
+      "path": "wetland_coupling/training.py",
+      "sha256": "b850dc005c705c199dcf18d7e0a218745dd62c68e362a473eca383d3d8968e9d",
+      "bytes": 12917
+    }
+  ]
+}

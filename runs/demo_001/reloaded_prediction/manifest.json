@@ -1,0 +1,10 @@
+{
+  "status": "SYNTHETIC_DEMO_ONLY",
+  "rows": 480,
+  "checkpoint_sha256": "9c0e1ec6c9de327f4b2a7a6b83c624d755872a8b12b5637b2e4a97eb8d2e9330",
+  "input_sha256": "578a9c341c37e19883e1dc9b9a86b7d202a260eb494472d9193cec95078586ae",
+  "active_heads": [
+    true,
+    true
+  ]
+}

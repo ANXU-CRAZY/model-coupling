@@ -1,0 +1,64 @@
+{
+  "status": "BASELINE_RESEARCH_SCORES",
+  "method": "geometric",
+  "alpha": 0.5,
+  "gamma": 0.5,
+  "thresholds": {
+    "m_high": 0.7,
+    "h_high": 0.7
+  },
+  "zone_counts": {
+    "0": 40,
+    "1": 121,
+    "2": 144,
+    "3": 238,
+    "4": 687,
+    "5": 50
+  },
+  "valid_pixels": 1240,
+  "mask_disagreement_pixels": 0,
+  "interpretation": "Restoration candidate ranking; not measured restoration benefit.",
+  "inputs": {
+    "m": {
+      "path": "/workspace/scratch/3a6baae0eb42/wetland_coupling_v0_1/runs/demo_001/input/raster_inputs/m.tif",
+      "sha256": "98f65c082891e9f57a7b8d06244ca2973193de5e2e34bd7e70d07e43aab66ceb"
+    },
+    "h": {
+      "path": "/workspace/scratch/3a6baae0eb42/wetland_coupling_v0_1/runs/demo_001/input/raster_inputs/h.tif",
+      "sha256": "730ce552541df62097595c412567f5cf8433ecef594b1606f3b9ca5c3adc461e"
+    },
+    "feasible": {
+      "path": "/workspace/scratch/3a6baae0eb42/wetland_coupling_v0_1/runs/demo_001/input/raster_inputs/feasible.tif",
+      "sha256": "c7db67a9368e0cce1c885712d032025c1777fac29306b019191c33cbc104a7d6"
+    },
+    "habitat_suitability": {
+      "path": "/workspace/scratch/3a6baae0eb42/wetland_coupling_v0_1/runs/demo_001/input/raster_inputs/habitat_suitability.tif",
+      "sha256": "6f8d914adfc999ea70977e5f50817b0617b6b23f20ffbbbe0f4c437b0f00d1e9"
+    }
+  },
+  "reference": {
+    "crs": "EPSG:32649",
+    "width": 40,
+    "height": 32,
+    "transform": [
+      100.0,
+      0.0,
+      350000.0,
+      0.0,
+      -100.0,
+      3850000.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "resolution": [
+      100.0,
+      100.0
+    ]
+  },
+  "outputs_sha256": {
+    "conservation_score.tif": "1dafd115080359b4d8eaec7946928078ff277f23b8721ce14b110052aca7d9ee",
+    "restoration_candidate_score.tif": "6fcfbfb1e4f082ffa81b0dcc2005045b2841b75811a31a2ba37e99eb097cc677",
+    "management_reference_zones.tif": "eeba6e7ea38ab931459b1fcc8966e0bd2265c9d45e2f412765e2bb7477cf56de"
+  }
+}
