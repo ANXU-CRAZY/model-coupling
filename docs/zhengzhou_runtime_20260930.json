@@ -1,0 +1,21 @@
+{
+  "python": "3.12.6",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "packages": {
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "scipy": "1.15.3",
+    "torch": "2.5.1+cpu",
+    "rasterio": "1.4.3",
+    "affine": "2.4.0"
+  },
+  "verification_date": "2026-09-30",
+  "exercise_data_kind": "synthetic",
+  "exercise_rows": 480,
+  "epochs_run": 168,
+  "best_epoch": 128,
+  "exercise_valid_raster_pixels": 1240,
+  "real_ecological_models_retrained": false,
+  "prepared_data_consistency_status": "PREPARED_DATA_HASH_GRID_MASK_AND_ARITHMETIC_AUDIT_PASSED",
+  "prepared_data_accuracy_established": false
+}

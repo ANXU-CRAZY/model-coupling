@@ -1,0 +1,72 @@
+{
+  "status": "REAL_INPUTS_PREPARED_FORMAL_TRAINING_PENDING",
+  "study": "Zhengzhou seasonal waterbird community pilot",
+  "scope": {
+    "policy": "configs/zhengzhou_waterbird_scope.json",
+    "species_and_synonym_review_complete": false,
+    "individual_species_models": false
+  },
+  "observations": {
+    "source": "Original ND Zhengzhou workbooks, 2014-2024",
+    "crs": "EPSG:4326",
+    "crs_evidence": "User confirmed WGS84 in this chat on 2026-09-30",
+    "zero_counts_are_absences": false,
+    "effort_and_event_identity_confirmed": false,
+    "original_coordinates_relocated_by_environment": false
+  },
+  "grid": {
+    "crs": "EPSG:32649",
+    "resolution_m": 100,
+    "source": "Native UDBX environmental raster grid",
+    "historical_asc_crs_assignment": "Inferred from exact native-grid alignment; producer confirmation pending",
+    "municipal_or_management_aoi_accepted": false
+  },
+  "maxent": {
+    "real_model_retrained": false,
+    "candidate_inputs": "local_work/zhengzhou_pilot/maxent_inputs_candidate_002",
+    "background_candidate": "Same-source all-bird observed cells, including waterbird cells",
+    "background_strategy_finalized": false,
+    "background_is_absence": false,
+    "environment_years_and_selection_provenance_confirmed": false,
+    "day_and_night_lst_identical_across_seasons": true,
+    "nested_tuning_candidate_rm": [0.5, 1, 2, 4],
+    "nested_tuning_candidate_fc": ["L", "LQ", "LQH"],
+    "candidate_grid_is_selected_optimum": false,
+    "output_transform_for_new_runs": "cloglog",
+    "pooled_community_scores_are_species_occurrence_probabilities": false
+  },
+  "validation": {
+    "locked_test_data": null,
+    "final_split_assigned": false,
+    "spatial_block_size_m": null,
+    "diagnostic_block_sizes_m": [5000, 10000, 20000],
+    "spatial_buffer_m": null,
+    "feature_selection_and_tuning_are_fold_internal": "REQUIRED_FOR_FORMAL_TRAINING",
+    "historical_full_data_outputs_are_oof": false,
+    "historical_2025_validation_is_fresh_locked_test": false
+  },
+  "invest": {
+    "archival_hq_available": true,
+    "archival_hq_is_static_across_seasons": true,
+    "archival_model_version_confirmed": false,
+    "matched_habitat_and_sensitivity_table": null,
+    "independent_calibration_targets": null,
+    "new_prior": "configs/invest_prior.pending.json",
+    "new_model_run": false
+  },
+  "gate": {
+    "base_oof_artifacts": null,
+    "m_uncertainty_members": null,
+    "q_uncertainty_members": null,
+    "protection_target": null,
+    "restoration_target": null,
+    "real_model_trained": false,
+    "missing_targets_are_zero": false
+  },
+  "management": {
+    "restoration_feasibility_a": null,
+    "matched_habitat_suitability_hj": null,
+    "restoration_score_generated": false,
+    "conservation_output": "Exploratory historical geometric/linear/minimum controls only"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "status": "FAMILY_SCOPE_CANDIDATE_PENDING_SPECIES_REVIEW",
+  "definition": "Waterbird families represented in the local records, using the IWC family approach. This does not reproduce the paper's unpublished 136-species selection.",
+  "source_urls": [
+    "https://www.wetlands.org/tools/international-waterbird-census/",
+    "https://downloads.wpp.wetlands.org/WPE5.pdf"
+  ],
+  "families": {
+    "潜鸟科": "Gaviidae",
+    "䴙䴘科": "Podicipedidae",
+    "鹈鹕科": "Pelecanidae",
+    "鸬鹚科": "Phalacrocoracidae",
+    "蛇鹈科": "Anhingidae",
+    "鹭科": "Ardeidae",
+    "鹳科": "Ciconiidae",
+    "鹮科": "Threskiornithidae",
+    "红鹳科": "Phoenicopteridae",
+    "鸭科": "Anatidae",
+    "雁鸭科": "Anatidae",
+    "鹤科": "Gruidae",
+    "秧鸡科": "Rallidae",
+    "水雉科": "Jacanidae",
+    "彩鹬科": "Rostratulidae",
+    "反嘴鹬科": "Recurvirostridae",
+    "蛎鹬科": "Haematopodidae",
+    "鸻科": "Charadriidae",
+    "鹬科": "Scolopacidae",
+    "丘鹬科": "Scolopacidae",
+    "石鸻科": "Burhinidae",
+    "燕鸻科": "Glareolidae",
+    "鸥科": "Laridae",
+    "燕鸥科": "Laridae",
+    "鹮嘴鹬科": "Ibidorhynchidae"
+  },
+  "associated_families_separate_from_core": ["翠鸟科", "鹗科"],
+  "coordinate_policy": "Keep supplied coordinates and source CRS status. Do not relocate points using NDVI, built-up cover, or model predictions.",
+  "zero_policy": "Preserve original zeros; positive records only enter the occurrence candidate output. A reported zero is not automatically a surveyed absence.",
+  "season_policy": "Calendar seasons: March-May spring, June-August summer, September-November autumn, December-February winter. A separate winter season-year assigns December to the following year.",
+  "supervision_policy": "Do not derive protection or restoration targets from M, HQ, fused scores, or unspecified observation counts."
+}
