@@ -1,0 +1,70 @@
+{
+  "status": "LITERATURE_AND_ARCHIVE_EVIDENCE_ASSEMBLED_LOCAL_PARAMETERS_PENDING",
+  "target_invest_version": "3.16.1",
+  "distance_unit": "m",
+  "mode": "Evidence registry; not an executable reviewed prior",
+  "historical_threats": [
+    {"threat": "urban_structure", "weight": 1.0, "max_dist": 1500, "decay": "exponential"},
+    {"threat": "human_activity", "weight": 0.7, "max_dist": 1000, "decay": "linear"},
+    {"threat": "night_light", "weight": 0.6, "max_dist": 2500, "decay": "exponential"}
+  ],
+  "historical_half_saturation_constant": 0.5,
+  "historical_evidence": "Project archive: 5.1作品介绍, LULC and threats paragraph; 7.1地理处理自动化模型说明文档, threat table",
+  "historical_values_are_measured_waterbird_parameters": false,
+  "threat_scale_comparability_confirmed": false,
+  "class_crosswalk": [
+    {"lucode": 1, "name": null, "status": "PENDING_SOURCE_CROSSWALK"},
+    {"lucode": 2, "name": null, "status": "PENDING_SOURCE_CROSSWALK"},
+    {"lucode": 3, "name": null, "status": "PENDING_SOURCE_CROSSWALK"},
+    {"lucode": 4, "name": null, "status": "PENDING_SOURCE_CROSSWALK"},
+    {"lucode": 5, "name": null, "status": "PENDING_SOURCE_CROSSWALK"},
+    {"lucode": 6, "name": null, "status": "PENDING_SOURCE_CROSSWALK"},
+    {"lucode": 7, "name": null, "status": "PENDING_SOURCE_CROSSWALK"},
+    {"lucode": 8, "name": null, "status": "PENDING_SOURCE_CROSSWALK"},
+    {"lucode": 9, "name": null, "status": "PENDING_SOURCE_CROSSWALK"}
+  ],
+  "habitat_prior_strategy": {
+    "guilds_to_review": ["waterfowl_diving_birds", "shorebirds", "herons_egrets"],
+    "other_waterbird_families": "Review separately; do not force assignment",
+    "habitat_values_from_full_data_maxent": false,
+    "permanent_water_requires_depth_or_shore_zone_review": true,
+    "bare_land_and_mudflat_require_separation": true,
+    "local_habitat_and_sensitivity_values": null
+  },
+  "literature_reference": {
+    "yellow_river_delta_shorebirds": {
+      "source": "https://www.mdpi.com/2072-4292/14/24/6191",
+      "table": "Table 1",
+      "evidence_type": "Borrowed ecological parameterization, not Zhengzhou measurements",
+      "habitat_values": {"cropland": 0.4, "reservoir_pond": 0.25, "bottomland": 0.18, "tidal_flat": 1.0, "estuarine_water": 0.89, "estuarine_delta": 1.0, "salt_pan": 0.7, "aquaculture": 0.55, "unused_land": 0.19},
+      "urban_sensitivities": {"cropland": 1.0, "reservoir_pond": 0.41, "bottomland": 1.0, "tidal_flat": 0.8, "estuarine_water": 0.7, "estuarine_delta": 0.75, "salt_pan": 0.31, "aquaculture": 0.41, "unused_land": 0.9},
+      "transfer_limit": "Coastal migratory shorebirds and fine coastal classes; not a complete inland multi-waterbird lookup"
+    },
+    "general_biodiversity_reference": {
+      "source": "https://www.frontiersin.org/journals/ecology-and-evolution/articles/10.3389/fevo.2022.1075914/full",
+      "table": "Table 2",
+      "habitat_values": {"forest": 0.9, "grassland": 0.8, "reservoir_pond": 0.9, "river": 0.8, "mudflat_wetland": 1.0},
+      "transfer_limit": "General biodiversity benchmark; not waterbird-specific and not local calibration"
+    }
+  },
+  "sensitivity_design": {
+    "status": "PROPOSED_EXPLORATION_NOT_CONFIDENCE_INTERVALS",
+    "historical_reference": true,
+    "leave_one_threat_out": true,
+    "distance_multipliers_one_at_a_time": [0.5, 1, 2],
+    "relative_weight_multipliers_one_at_a_time": [0.5, 1, 2],
+    "weight_rescaling": "Divide all raw weights by their maximum if needed; InVEST uses normalized ratios",
+    "half_saturation_multipliers": [0.5, 1, 2],
+    "all_zero_threat_weights_allowed": false,
+    "maximum_threat_distance_m": 5000,
+    "required_minimum_boundary_buffer_m": 5000,
+    "same_k_and_resolution_within_comparable_scenarios": true,
+    "k_changes_are_separate_sensitivity_scenarios": true
+  },
+  "independent_parameter_review": {
+    "habitat_definition_review": "Field ecology and literature, separate from the prediction maps",
+    "reviewer_ratings": null,
+    "local_calibration": null,
+    "eligible_for_official_run": false
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "status": "STATIC_REUSE_CONFIRMED_ABLATION_PROPOSED_NOT_FITTED",
+  "historical_role": "static_reference_spatial_covariate",
+  "seasons_intentionally_shared": true,
+  "source_period_and_units_verified": false,
+  "historical_reuse_confirmation": "User explicitly confirmed repeated LST was intentional",
+  "allowed_interpretation": "Season-specific waterbird association with a common reference thermal landscape",
+  "seasonal_or_interannual_temperature_change_inferred": false,
+  "experiments": ["no_lst", "static_lst", "seasonal_lst"],
+  "preferred_new_product": "MODIS/061/MOD11A1",
+  "native_resolution_m": 1000,
+  "working_grid_resolution_m": 100,
+  "resampling_adds_temperature_information": false,
+  "qc": {
+    "mandatory_qa_accepted": [0],
+    "emissivity_error_flag_max": 1,
+    "lst_error_flag_max": 0,
+    "lst_error_flag_sensitivity_max": 1,
+    "bits_2_3_policy": "Retain until NASA/GEE product-definition differences are resolved",
+    "raw_temperature_scale": 0.02,
+    "raw_temperature_offset_celsius": -273.15,
+    "raw_fill_value": 0
+  },
+  "valid_day_fraction_candidates": [0.2, 0.3, 0.5],
+  "winter_year_policy": "previous_December_current_January_February",
+  "pooled_record_comparison": "Multiyear seasonal composites for the matching study window; not annual change",
+  "matched_time_comparison": "Requires event or pixel-year-season observations and same-time background",
+  "same_outer_folds_and_locked_test": true,
+  "paired_evaluation_domain": "common_valid_samples_and_background",
+  "retune_rm_fc_and_select_features_inside_each_variant": true,
+  "seasonal_input_status": "PENDING_SOURCE_PERIOD_AND_DATA",
+  "sources": [
+    "https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD11A1",
+    "https://ladsweb.modaps.eosdis.nasa.gov/filespec/MODIS/61/MOD11A1",
+    "https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD11A2"
+  ]
+}

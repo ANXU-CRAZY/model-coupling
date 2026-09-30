@@ -29,6 +29,10 @@
     "background_is_absence": false,
     "environment_years_and_selection_provenance_confirmed": false,
     "day_and_night_lst_identical_across_seasons": true,
+    "lst_static_reuse_intent_confirmed_by_user": true,
+    "lst_policy": "configs/zhengzhou_lst_policy.json",
+    "lst_ablation_inputs": "local_work/zhengzhou_pilot/lst_ablation_inputs_002",
+    "lst_ablation_models_fitted": false,
     "nested_tuning_candidate_rm": [0.5, 1, 2, 4],
     "nested_tuning_candidate_fc": ["L", "LQ", "LQH"],
     "candidate_grid_is_selected_optimum": false,
@@ -52,6 +56,10 @@
     "matched_habitat_and_sensitivity_table": null,
     "independent_calibration_targets": null,
     "new_prior": "configs/invest_prior.pending.json",
+    "evidence_registry": "configs/zhengzhou_habitat_evidence.draft.json",
+    "local_class_crosswalk_confirmed": false,
+    "proposed_threat_sensitivity_designs": 18,
+    "evidence_packet": "local_work/zhengzhou_pilot/evidence_packet_001",
     "new_model_run": false
   },
   "gate": {
@@ -60,6 +68,10 @@
     "q_uncertainty_members": null,
     "protection_target": null,
     "restoration_target": null,
+    "supervision_evidence_candidates": "local_work/zhengzhou_pilot/supervision_candidates_003",
+    "candidate_events": 8407,
+    "real_supervision_labels_created": 0,
+    "editable_review_workbook_available_locally": true,
     "real_model_trained": false,
     "missing_targets_are_zero": false
   },
