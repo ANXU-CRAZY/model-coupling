@@ -1,5 +1,5 @@
 {
-  "status": "REAL_INPUTS_PREPARED_FORMAL_TRAINING_PENDING",
+  "status": "MAXENT_V1_003_COMPLETED_WITH_LIMITATIONS",
   "study": "Zhengzhou seasonal waterbird community pilot",
   "scope": {
     "policy": "configs/zhengzhou_waterbird_scope.json",
@@ -22,32 +22,77 @@
     "municipal_or_management_aoi_accepted": false
   },
   "maxent": {
-    "real_model_retrained": false,
-    "candidate_inputs": "local_work/zhengzhou_pilot/maxent_inputs_candidate_002",
+    "real_model_retrained": true,
+    "candidate_inputs": "local_work/zhengzhou_pilot/maxent_formal_v1_001/inputs",
     "background_candidate": "Same-source all-bird observed cells, including waterbird cells",
-    "background_strategy_finalized": false,
+    "background_strategy_finalized": true,
     "background_is_absence": false,
     "environment_years_and_selection_provenance_confirmed": false,
     "day_and_night_lst_identical_across_seasons": true,
     "lst_static_reuse_intent_confirmed_by_user": true,
     "lst_policy": "configs/zhengzhou_lst_policy.json",
     "lst_ablation_inputs": "local_work/zhengzhou_pilot/lst_ablation_inputs_002",
-    "lst_ablation_models_fitted": false,
-    "nested_tuning_candidate_rm": [0.5, 1, 2, 4],
-    "nested_tuning_candidate_fc": ["L", "LQ", "LQH"],
+    "lst_ablation_models_fitted": true,
+    "nested_tuning_candidate_rm": [
+      0.5,
+      1,
+      2,
+      4
+    ],
+    "nested_tuning_candidate_fc": [
+      "L",
+      "LQ",
+      "LQH"
+    ],
     "candidate_grid_is_selected_optimum": false,
     "output_transform_for_new_runs": "cloglog",
-    "pooled_community_scores_are_species_occurrence_probabilities": false
+    "pooled_community_scores_are_species_occurrence_probabilities": false,
+    "final_run": "local_work/zhengzhou_pilot/maxent_formal_v1_003",
+    "maxent_version": "3.4.4",
+    "oof_status": "CONDITIONAL_ON_PRIOR_PRESELECTED_CANDIDATES",
+    "strict_end_to_end_oof": false,
+    "gate_eligible": false,
+    "selected_final_backgrounds": {
+      "spring": {
+        "no_lst": "B1_uniform",
+        "static_lst": "B1_uniform"
+      },
+      "summer": {
+        "no_lst": "B1_uniform",
+        "static_lst": "B1_uniform"
+      },
+      "autumn": {
+        "no_lst": "B0_target_group",
+        "static_lst": "B1_uniform"
+      },
+      "winter": {
+        "no_lst": "B1_uniform",
+        "static_lst": "B1_uniform"
+      }
+    }
   },
   "validation": {
-    "locked_test_data": null,
-    "final_split_assigned": false,
-    "spatial_block_size_m": null,
-    "diagnostic_block_sizes_m": [5000, 10000, 20000],
-    "spatial_buffer_m": null,
+    "locked_test_data": "Internal spatial holdout; consumed once after final feature/background selection freeze in maxent_formal_v1_003",
+    "final_split_assigned": true,
+    "spatial_block_size_m": 10000,
+    "diagnostic_block_sizes_m": [
+      5000,
+      10000,
+      20000
+    ],
+    "spatial_buffer_m": 1000,
     "feature_selection_and_tuning_are_fold_internal": "REQUIRED_FOR_FORMAL_TRAINING",
     "historical_full_data_outputs_are_oof": false,
-    "historical_2025_validation_is_fresh_locked_test": false
+    "historical_2025_validation_is_fresh_locked_test": false,
+    "additional_pixel_diagonal_buffer_m": 141.421356,
+    "outer_folds": 3,
+    "inner_folds": 3,
+    "locked_test_used_once": true,
+    "strict_end_to_end_oof": false,
+    "gate_eligible": false,
+    "oof_export": "local_work/zhengzhou_pilot/maxent_formal_v1_003/oof_export_002",
+    "spatial_oof_audit": "local_work/zhengzhou_pilot/maxent_formal_v1_003/audit/final_spatial_oof_audit_002.json",
+    "evaluation": "local_work/zhengzhou_pilot/maxent_formal_v1_003/cv_evaluation_003"
   },
   "invest": {
     "archival_hq_available": true,
@@ -63,8 +108,8 @@
     "new_model_run": false
   },
   "gate": {
-    "base_oof_artifacts": null,
-    "m_uncertainty_members": null,
+    "base_oof_artifacts": "local_work/zhengzhou_pilot/maxent_formal_v1_003/oof_export_002",
+    "m_uncertainty_members": 3,
     "q_uncertainty_members": null,
     "protection_target": null,
     "restoration_target": null,
