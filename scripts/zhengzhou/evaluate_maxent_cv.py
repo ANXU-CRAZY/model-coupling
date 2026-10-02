@@ -1,8 +1,9 @@
 """Read-only development-CV summaries and figures; never choose with locked test.
 
-Use the project CPU environment for --prepare-only (GeoTIFF -> plot NPZ), then
-an environment with matplotlib for --render-only. No locked-test metrics are
-read by this program. Full-resolution OOF arrays determine paired statistics.
+Use the project CPU environment for --prepare-only, then an environment with
+matplotlib for --render-only. Historical locked metrics embedded in the run
+status file are never used; the separate locked-test metrics file is not read.
+Fixed-B1 member outputs and selected-primary OOF comparisons are kept separate.
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import json
 from pathlib import Path
 import platform
 import re
+import subprocess
 import sys
 import warnings
 
@@ -21,9 +23,25 @@ import pandas as pd
 from scipy.stats import spearmanr
 
 try:
-    from scripts.zhengzhou.export_maxent_oof import SEASONS, VARIANTS, SCHEMES, sha256, read_json, write_json, verify_run_file, verify_split_inventory, resolve_migrated_project_path
+    from scripts.zhengzhou.export_maxent_oof import SEASONS, VARIANTS, SCHEMES, sha256, read_json, write_json, verify_file, verify_run_file, verify_split_inventory, resolve_migrated_project_path, validate_member
 except ModuleNotFoundError:
-    from export_maxent_oof import SEASONS, VARIANTS, SCHEMES, sha256, read_json, write_json, verify_run_file, verify_split_inventory, resolve_migrated_project_path
+    from export_maxent_oof import SEASONS, VARIANTS, SCHEMES, sha256, read_json, write_json, verify_file, verify_run_file, verify_split_inventory, resolve_migrated_project_path, validate_member
+
+
+def postprocessing_provenance(training_commit):
+    """Distinguish the training snapshot from the actual postprocessing sources."""
+    source = Path(__file__).resolve()
+    root = source.parents[2]
+    git = ["git", "-c", "safe.directory=" + root.as_posix(), "-C", str(root)]
+    head = subprocess.run([*git, "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    dirty = subprocess.run([*git, "status", "--porcelain", "--untracked-files=no"],
+                           capture_output=True, text=True, check=True).stdout
+    paths = [source, root / "scripts/zhengzhou/export_maxent_oof.py"]
+    return {"training_git_commit": training_commit, "postprocessing_git_commit": head,
+            "dirty_worktree": bool(dirty.strip()),
+            "source_code_sha256": {path.relative_to(root).as_posix(): sha256(path) for path in paths},
+            "postprocessing_source_recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+            "source_provenance_note": "HEAD plus exact source hashes; a dirty worktree is not represented by HEAD alone"}
 
 
 def paired_prediction_metrics(a, b, fraction=.1):
@@ -81,6 +99,164 @@ def paired_outer_lst_metrics(outer, measures):
                 row[metric+"_static_minus_no_lst"]=float(bb.loc[fold,metric]-aa.loc[fold,metric])
             rows.append(row)
     return rows
+
+
+def projection_member_oof(engine_path, expected_hash, selection_path, indices, grid):
+    """Recover a member's held-out raster tail from preserved official outputs.
+
+    The deleted SWD projection inputs are not needed. Completed-engine hashes,
+    contiguous part numbering, original row counts, the selection offset and
+    every output coordinate must agree with the frozen row-major raster tail.
+    """
+    from rasterio.warp import transform
+
+    engine_path, selection_path = Path(engine_path), Path(selection_path)
+    verify_file(engine_path, expected_hash)
+    engine = read_json(engine_path)
+    if (engine.get("status") != "OFFICIAL_MAXENT_FITTED"
+            or engine.get("output_scale") != "cloglog"
+            or engine.get("output_is_calibrated_probability") is not False
+            or engine.get("background_is_absence") is not False):
+        raise ValueError("Require a completed official cloglog member")
+    indices = np.asarray(indices, dtype=np.int64)
+    size = int(grid["height"]) * int(grid["width"])
+    if (indices.ndim != 1 or not len(indices) or np.any(indices < 0)
+            or np.any(indices >= size) or np.any(np.diff(indices) <= 0)):
+        raise ValueError("Expected unique row-major frozen raster indices")
+    selected = read_json(selection_path)
+    if selected["predictors"] != engine["inputs"]["train"]["columns"][3:]:
+        raise ValueError("Member predictor selection disagrees with official fit")
+    total_expected = int(engine["inputs"]["projection"]["rows"])
+    start = total_expected - len(indices)
+    offsets = selected["offsets"]
+    if (start < 0 or selected["projection_start"] != start or len(offsets) != 5
+            or offsets[0] != 0 or offsets[-1] != start or np.any(np.diff(offsets) < 0)
+            or offsets[1] != int(engine["inputs"]["train"]["rows"])
+            or int(engine.get("prediction_rows", -1)) != total_expected):
+        raise ValueError("Member projection tail/offset differs from original row count")
+    outputs = engine.get("outputs", {})
+    parts = []
+    for name, record in outputs.items():
+        match = re.fullmatch(r"[^/\\]+_projection(?:_part(\d{5}))?\.csv", name)
+        if match:
+            parts.append((None if match.group(1) is None else int(match.group(1)), name, record))
+    if not parts:
+        raise ValueError("Official projection outputs are missing from the engine inventory")
+    if any(i is None for i, _, _ in parts):
+        if len(parts) != 1:
+            raise ValueError("Mixed split and unsplit official projection outputs")
+    else:
+        parts.sort(key=lambda item: item[0])
+        if [i for i, _, _ in parts] != list(range(len(parts))):
+            raise ValueError("Missing or repeated official projection output part")
+    consumed = [engine_path, selection_path]
+    tail, total = [], 0
+    for _, name, record in parts:
+        path = engine_path.parent / name
+        verify_file(path, record["sha256"])
+        if "bytes" in record and path.stat().st_size != record["bytes"]:
+            raise ValueError("Official projection output byte count changed")
+        consumed.append(path)
+        with pd.read_csv(path, chunksize=50000) as reader:
+            for frame in reader:
+                columns = list(frame.columns)
+                if (len(columns) != 3 or columns[:2] != ["longitude", "latitude"]
+                        or not columns[2].endswith(" cloglog values")):
+                    raise ValueError("Official projection output schema is not SWD cloglog")
+                after = total + len(frame)
+                if after > start:
+                    tail.append(frame.iloc[max(0, start - total):].to_numpy(dtype=float))
+                total = after
+    if total != total_expected:
+        raise ValueError("Official projection outputs differ from original row count")
+    rows = np.concatenate(tail, axis=0) if tail else np.empty((0, 3))
+    if len(rows) != len(indices) or not np.isfinite(rows).all():
+        raise ValueError("Incomplete or nonfinite member OOF output tail")
+    if np.any((rows[:, 2] < 0) | (rows[:, 2] > 1)):
+        raise ValueError("Official member cloglog score outside [0,1]")
+    gt = grid["transform_gdal"]
+    if len(gt) != 6 or gt[2] != 0 or gt[4] != 0 or gt[1] <= 0 or gt[5] >= 0:
+        raise ValueError("Require the frozen north-up projected grid")
+    xs, ys = transform("EPSG:4326", "EPSG:32649", rows[:, 0].tolist(), rows[:, 1].tolist())
+    xs, ys = np.asarray(xs), np.asarray(ys)
+    actual_rows = np.floor((ys - gt[3]) / gt[5]).astype(np.int64)
+    actual_cols = np.floor((xs - gt[0]) / gt[1]).astype(np.int64)
+    expected_rows, expected_cols = np.divmod(indices, int(grid["width"]))
+    if (not np.array_equal(actual_rows, expected_rows)
+            or not np.array_equal(actual_cols, expected_cols)):
+        raise ValueError("Official projection coordinates differ from frozen row-major OOF cells")
+    center_error = np.maximum(np.abs(xs - (gt[0] + (expected_cols + .5) * gt[1])),
+                              np.abs(ys - (gt[3] + (expected_rows + .5) * gt[5])))
+    if np.any(center_error > .05):
+        raise ValueError("Official projection coordinates are not frozen raster cell centers")
+    record = {"engine_manifest": str(engine_path), "engine_manifest_sha256": expected_hash,
+              "projection_output_files": [str(path) for path in consumed[2:]],
+              "original_projection_rows": total_expected, "projection_tail_start": start,
+              "oof_pixels": len(indices), "raster_tail_order": "frozen row-major validation mask",
+              "every_output_coordinate_verified": True, "max_coordinate_center_error_m": float(center_error.max()),
+              "coordinate_center_tolerance_m": .05, "deleted_projection_inputs_read": False}
+    return rows[:, 2], record, consumed
+
+
+def fixed_b1_member_oof(run, season, variant, fold, plan, masks, state, artifacts):
+    """Connect one fixed-B1 projection tail to its frozen outer-fold lineage."""
+    fold_no = int(fold["fold"])
+    member_path = run / "oof" / f"{season}_{variant}_outer_{fold_no}_members.json"
+    verify_run_file(run, member_path, state)
+    members = read_json(member_path)
+    if (members["split_sha256"] != state["split_manifest_sha256"]
+            or set(members["validation_groups"]) != set(fold["validation_groups"])
+            or set(members["fit_and_tune_groups"]) != set(fold["fit_groups"])):
+        raise ValueError("B1 member inventory differs from the frozen split")
+    candidates = []
+    for raw in members["members"]:
+        path = resolve_migrated_project_path(raw, run).resolve()
+        if str(path) not in artifacts:
+            raise ValueError("Outer member is missing from model provenance")
+        artifact = artifacts[str(path)]
+        if artifact["background"] == "B1_uniform":
+            candidates.append((path, artifact))
+    if len(candidates) != 1:
+        raise ValueError("Need exactly one B1 member per season/variant/outer fold")
+    path, artifact = candidates[0]
+    if (artifact["season"] != season or artifact["variant"] != variant
+            or artifact["scope"] != f"outer_{fold_no}"):
+        raise ValueError("B1 member has the wrong season/variant/fold")
+    mask = masks[f"outer_{fold_no}_validation"]
+    if np.any(mask & (masks["locked_test"] | masks["locked_group_buffer"] | ~masks["common_valid"])):
+        raise ValueError("B1 member OOF mask contains locked/buffer/invalid cells")
+    codes = np.unique(masks["group_raster"][mask]).tolist()
+    validate_member(artifact, fold, plan["locked_groups"], codes)
+    engine = read_json(path)
+    if (engine.get("maxent_version") != state["runtime"]["maxent_version"]
+            or engine.get("jar_sha256") != state["runtime"]["jar_sha256"]
+            or engine["rm"] != artifact["rm"] or engine["fc"] != artifact["fc"]):
+        raise ValueError("B1 member runtime/parameters disagree with run provenance")
+    indices = np.flatnonzero(mask)
+    values, record, consumed = projection_member_oof(
+        path, artifact["engine_manifest_sha256"], path.parent.parent / "selection.json", indices, plan["grid"])
+    record.update(season=season, variant=variant, fold=fold_no, background="B1_uniform",
+                  fit_groups=fold["fit_groups"], tune_groups=fold["fit_groups"],
+                  validation_groups=fold["validation_groups"], strict_end_to_end_oof=False,
+                  gate_eligible=False, split_manifest_sha256=state["split_manifest_sha256"])
+    return indices, values, record, [member_path, *consumed]
+
+
+def primary_pipeline_scope(outer, season):
+    """Expose when two selected pipelines differ in their fitted backgrounds."""
+    primary = outer[(outer.season == season) & outer.chosen_background]
+    if primary.duplicated(["variant", "fold"]).any():
+        raise ValueError("Repeated primary background selection")
+    maps = {v: {int(row.fold): row.background for row in primary[primary.variant == v].itertuples()}
+            for v in VARIANTS}
+    if set(maps["no_lst"]) != set(maps["static_lst"]):
+        raise ValueError("Primary pipelines have different outer folds")
+    mismatch = [fold for fold in sorted(maps["no_lst"]) if maps["no_lst"][fold] != maps["static_lst"][fold]]
+    return {"metric_scope": "selected-primary pipeline agreement; fitted backgrounds may differ",
+            "isolated_lst_comparison": False, "fitted_backgrounds_differ": bool(mismatch),
+            "background_mismatch_folds": ";".join(map(str, mismatch)),
+            **{v + "_fitted_backgrounds": ";".join(f"{fold}:{background}" for fold, background in sorted(maps[v].items()))
+               for v in VARIANTS}}
 
 
 def predictor_jaccards(frame):
@@ -198,12 +374,62 @@ def convergence_inventory(run, outer):
     return rows,summary,status,consumed
 
 
+def selection_constraint_audit(run, plan, state, convergence, omission_limit):
+    """Report the frozen fallback choices and their inner numerical evidence."""
+    frozen_path = run / "manifests/frozen_selection.json"
+    verify_file(frozen_path, state["frozen_selection_sha256"])
+    frozen = read_json(frozen_path)
+    frame = pd.DataFrame(convergence)
+    consumed, rows = [frozen_path], []
+    scopes = [f"outer_{fold['fold']}" for fold in plan["outer_folds"]] + ["full_development"]
+    for season in SEASONS:
+        for scope in scopes:
+            path = run / "reports" / f"tuning_{season}_{scope}.json"
+            verify_run_file(run, path, state)
+            consumed.append(path)
+            winners = read_json(path)["variant_winners"]
+            if scope == "full_development" and winners != frozen["selection"][season]["variant_winners"]:
+                raise ValueError("Final tuning winner differs from frozen selection")
+            for variant in VARIANTS:
+                winner = winners[variant]
+                failed = winner["omission_constraint_failed"]
+                if not isinstance(failed, bool) or failed != (winner["mean_omission"] > omission_limit):
+                    raise ValueError("Frozen omission qualification flag is inconsistent")
+                matches = frame[(frame.season == season) & (frame.variant == variant)
+                    & (frame.scope == scope) & (frame.category == "inner_candidate")
+                    & (frame.background == winner["background"]) & (frame.rm == winner["rm"]) & (frame.fc == winner["fc"])]
+                if len(matches) != winner["inner_folds"]:
+                    raise ValueError("Selected candidate inner convergence evidence is incomplete")
+                rows.append({"season": season, "scope": scope, "variant": variant,
+                    "winner_role": "frozen_final" if scope == "full_development" else "outer_primary",
+                    "background": winner["background"], "rm": winner["rm"], "fc": winner["fc"],
+                    "mean_inner_omission_10": winner["mean_omission"], "frozen_omission_limit": omission_limit,
+                    "omission_constraint_failed": failed,
+                    "frozen_rule_fallback_used": failed,
+                    "candidate_inner_models": len(matches),
+                    "candidate_inner_models_converged": int(matches.official_html_termination.eq("converged").sum()),
+                    "candidate_inner_models_terminated_at_limit": int(matches.official_html_termination.eq("terminated").sum()),
+                    "selection_rule_modified": False, "locked_test_metrics_used": False})
+    summary = {"frozen_omission_limit": omission_limit,
+        "outer_primary_winners": sum(r["winner_role"] == "outer_primary" for r in rows),
+        "outer_primary_fallbacks": sum(r["winner_role"] == "outer_primary" and r["frozen_rule_fallback_used"] for r in rows),
+        "frozen_final_winners": sum(r["winner_role"] == "frozen_final" for r in rows),
+        "frozen_final_fallbacks": sum(r["winner_role"] == "frozen_final" and r["frozen_rule_fallback_used"] for r in rows),
+        "selected_candidate_inner_models": sum(r["candidate_inner_models"] for r in rows),
+        "selected_candidate_inner_models_converged": sum(r["candidate_inner_models_converged"] for r in rows),
+        "selected_candidate_inner_models_terminated_at_limit": sum(r["candidate_inner_models_terminated_at_limit"] for r in rows),
+        "selection_rule_modified": False, "locked_test_metrics_used": False,
+        "interpretation": "Fallback preserves the frozen rule; it does not satisfy the predeclared omission qualification"}
+    return rows, summary, consumed
+
+
 def prepare_reports(run,inputs,splits,out,allow_incomplete=False,plot_stride=3):
     start = datetime.now(timezone.utc).isoformat()
     run,inputs,splits,out = map(lambda p:Path(p).resolve(),(run,inputs,splits,out))
     if out.exists(): raise FileExistsError("Refusing existing CV postprocessing output: "+str(out))
     if plot_stride<1: raise ValueError("Positive plotting stride required")
     state = read_json(run/"manifests/run_manifest.json")
+    processor_provenance = postprocessing_provenance(state.get("git_commit"))
     verify_split_inventory(splits)
     plan = read_json(splits/"split_plan.json")
     if state.get("split_manifest_sha256") != sha256(splits/"manifest.json"):
@@ -248,7 +474,11 @@ def prepare_reports(run,inputs,splits,out,allow_incomplete=False,plot_stride=3):
                         "common_validation_reference":"B1_uniform","background_is_absence":False})
     plot_data={"role":masks["role_raster"][::plot_stride,::plot_stride],"common":masks["common_valid"][::plot_stride,::plot_stride],
                "locked_buffer":masks["locked_group_buffer"][::plot_stride,::plot_stride]}
-    paired_rasters=[]
+    paired_rasters, primary_rasters, b1_provenance = [], [], []
+    model_provenance_path = run / "manifests/model_provenance.json"
+    consumed.append(model_provenance_path)
+    artifacts = {str(resolve_migrated_project_path(a["engine_manifest"], run).resolve()): a
+                 for a in read_json(model_provenance_path)["artifacts"] if a["scope"].startswith("outer_")}
     expected=np.logical_or.reduce([masks[f"outer_{fold['fold']}_validation"] for fold in plan["outer_folds"]]).ravel()
     shape=masks["common_valid"].shape
     for season in SEASONS:
@@ -288,7 +518,25 @@ def prepare_reports(run,inputs,splits,out,allow_incomplete=False,plot_stride=3):
                     plot_data[f"{season}_{variant}_final"]=np.where(valid,a,np.nan)[::plot_stride,::plot_stride].astype("float32")
             else: missing.append(f"final_prediction_{season}_{variant}")
         if set(oof_values)==set(VARIANTS):
-            paired_rasters.append({"season":season,**paired_prediction_metrics(oof_values["no_lst"][expected],oof_values["static_lst"][expected])})
+            primary_rasters.append({"season":season, **primary_pipeline_scope(outer, season),
+                **paired_prediction_metrics(oof_values["no_lst"][expected],oof_values["static_lst"][expected])})
+        fixed_values = {variant: np.full(expected.shape, np.nan) for variant in VARIANTS}
+        for variant in VARIANTS:
+            for fold in plan["outer_folds"]:
+                indices, scores, lineage, files = fixed_b1_member_oof(
+                    run, season, variant, fold, plan, masks, state, artifacts)
+                if np.isfinite(fixed_values[variant][indices]).any():
+                    raise ValueError("Overlapping B1 OOF raster tails")
+                fixed_values[variant][indices] = scores
+                b1_provenance.append(lineage)
+                consumed.extend(files)
+            if not np.array_equal(np.isfinite(fixed_values[variant]), expected):
+                raise ValueError("B1 OOF member outputs do not cover the frozen validation union")
+        paired_rasters.append({"season":season, "fitted_background":"B1_uniform",
+            "metric_scope":"fixed-B1 outer member OOF spatial comparison; variant-specific inner tuning",
+            "fitted_backgrounds_differ":False, "strict_end_to_end_oof":False, "gate_eligible":False,
+            **paired_prediction_metrics(fixed_values["no_lst"][expected], fixed_values["static_lst"][expected])})
+        del fixed_values
         del oof_values
     inner=[]
     for path in sorted((run/"reports").glob("inner_*_*.csv")):
@@ -304,6 +552,10 @@ def prepare_reports(run,inputs,splits,out,allow_incomplete=False,plot_stride=3):
         else: missing.append(f"development_tuning_{season}")
     convergence,convergence_summary,numerical_status,convergence_sources=convergence_inventory(run,outer)
     consumed.extend(convergence_sources)
+    split_config = read_json(splits / "config_snapshot.json")
+    constraint_rows, constraint_summary, constraint_sources = selection_constraint_audit(
+        run, plan, state, convergence, split_config["selection"]["mean_omission_eligibility_max"])
+    consumed.extend([splits / "config_snapshot.json", *constraint_sources])
     if missing and not allow_incomplete: raise ValueError("Completed four-season run required: "+", ".join(missing))
     out.mkdir(parents=True,exist_ok=False)
     _save_csv(out/"outer_background_summary.csv",scheme_summary,["season","variant","background"])
@@ -311,6 +563,11 @@ def prepare_reports(run,inputs,splits,out,allow_incomplete=False,plot_stride=3):
     _save_csv(out/"outer_member_metrics.csv",outer.to_dict("records"),["season","variant","fold"])
     _save_csv(out/"paired_lst_outer_metrics.csv",paired_scores,["season","fold"])
     _save_csv(out/"paired_lst_oof_spatial_metrics.csv",paired_rasters,["season"])
+    _save_csv(out/"primary_pipeline_oof_spatial_metrics.csv",primary_rasters,["season"])
+    write_json(out/"fixed_b1_oof_provenance.json", {"members":b1_provenance,
+        "all_output_coordinates_match_frozen_validation_cells":True,
+        "comparison_uses_fixed_fitted_background":"B1_uniform",
+        "strict_end_to_end_oof":False,"gate_eligible":False,"models_or_tests_fitted":0})
     _save_csv(out/"background_sensitivity_pairs.csv",background_pairs,["season","variant"])
     _save_csv(out/"variable_jaccard_stability.csv",jaccards,["season","variant","background"])
     _save_csv(out/"variable_selection_frequency.csv",frequency,["season","variant","background","predictor"])
@@ -319,6 +576,8 @@ def prepare_reports(run,inputs,splits,out,allow_incomplete=False,plot_stride=3):
     _save_csv(out/"model_numerical_convergence.csv",convergence,["season","variant","category"])
     _save_csv(out/"model_numerical_convergence_summary.csv",convergence_summary,["season","variant","category"])
     write_json(out/"numerical_limitations.json",numerical_status)
+    _save_csv(out/"selection_constraint_audit.csv",constraint_rows)
+    write_json(out/"selection_constraint_summary.json",constraint_summary)
     for season in SEASONS:
         for kind,name in (("presence",f"presence_{season}.csv"),("B0",f"background_B0_{season}.csv"),("B1",f"background_B1_{season}.csv")):
             p=splits/name;consumed.append(p)
@@ -337,8 +596,14 @@ def prepare_reports(run,inputs,splits,out,allow_incomplete=False,plot_stride=3):
     inputs_inventory={str(p):{"sha256":sha256(p),"bytes":p.stat().st_size} for p in dict.fromkeys(consumed)}
     manifest={"status":"CV_POSTPROCESSING_DATA_PREPARED" if not missing else "PARTIAL_CV_POSTPROCESSING_DATA_PREPARED",
         "started_at_utc":start,"prepared_at_utc":datetime.now(timezone.utc).isoformat(),"python":sys.version,"command_line":sys.argv,
-        "git_commit":state.get("git_commit"),"seed":state.get("seed"),"split_manifest_sha256":sha256(splits/"manifest.json"),
-        "config_sha256":state.get("config_sha256"),"maxent_runtime":state.get("runtime"),"locked_test_metrics_read":False,
+        **processor_provenance,"seed":state.get("seed"),"split_manifest_sha256":sha256(splits/"manifest.json"),
+        "config_sha256":state.get("config_sha256"),"maxent_runtime":state.get("runtime"),
+        "locked_test_metrics_used":False,"locked_test_metrics_file_read":False,
+        "run_status_contains_historical_locked_summary":"locked_metrics" in state,
+        "fixed_b1_oof_members_verified":len(b1_provenance),
+        "selection_constraint_summary":constraint_summary,
+        "paired_lst_spatial_scope":"fixed B1 fitted background, independently inner-tuned LST variants",
+        "primary_pipeline_spatial_scope":"separate selected-primary comparison; backgrounds may differ",
         "model_selection_performed":False,"strict_end_to_end_oof":False,"gate_eligible":False,"missing_artifacts":missing,
         "numerical_limitations":numerical_status["numerical_limitations"],
         "source_files_modified":False,"private_coordinates_do_not_commit":True,"inputs":inputs_inventory,
@@ -431,8 +696,21 @@ def render_figures(out):
             axes[2].bar(np.arange(4)-.18,indexed.spearman_rho,width=.35,color="#437F97",label="OOF Spearman")
             axes[2].bar(np.arange(4)+.18,indexed.top_jaccard,width=.35,color="#9A67AC",label="OOF top 10% Jaccard")
         axes[2].set_xticks(range(4),[s[:3].title() for s in SEASONS]);axes[2].set_ylim(-1,1);axes[2].legend(fontsize=8)
-        fig.suptitle("Static vs no LST: same outer spatial folds; conditional OOF prediction agreement")
+        axes[2].set_title("Fixed-B1 OOF spatial agreement",fontsize=10)
+        fig.suptitle("Static vs no LST: fixed B1 fitted background, shared outer folds\nVariant-specific inner tuning; OOF conditional on prior predictor selection",fontsize=11)
         fig.savefig(figure_dir/"04_lst_paired_comparison.png");plt.close(fig)
+
+        primary=pd.read_csv(out/"primary_pipeline_oof_spatial_metrics.csv")
+        fig,ax=plt.subplots(figsize=(9,4),constrained_layout=True)
+        if not primary.empty:
+            indexed=primary.set_index("season").reindex(SEASONS)
+            ax.bar(np.arange(4)-.18,indexed.spearman_rho,width=.35,color="#437F97",label="Spearman")
+            ax.bar(np.arange(4)+.18,indexed.top_jaccard,width=.35,color="#9A67AC",label="Top 10% Jaccard")
+            labels=[s[:3].title()+ (" *" if bool(indexed.loc[s,"fitted_backgrounds_differ"]) else "") for s in SEASONS]
+            ax.set_xticks(range(4),labels)
+        ax.set_ylim(-1,1);ax.legend(fontsize=8)
+        ax.set_title("Selected-primary pipeline OOF agreement\n* Fitted backgrounds differ across variants in at least one fold; not an isolated LST comparison",fontsize=10)
+        fig.savefig(figure_dir/"08_primary_pipeline_oof_agreement.png");plt.close(fig)
 
         for kind,filename,title,label in (("final","05_final_prediction_maps.png","Frozen development-fit reference-surface predictions","Cloglog suitability; not calibrated probability"),
                                          ("oof_std","06_oof_uncertainty_maps.png","Conditional OOF member dispersion across three backgrounds","Member standard deviation; not a confidence interval")):
@@ -466,7 +744,7 @@ def render_figures(out):
         fig.savefig(figure_dir/"07_background_sensitivity.png");plt.close(fig)
     manifest.update(status="CV_POSTPROCESSING_COMPLETE" if not meta["missing_artifacts"] else "PARTIAL_CV_POSTPROCESSING_COMPLETE",
         rendered_at_utc=datetime.now(timezone.utc).isoformat(),render_python=sys.version,matplotlib_version=matplotlib.__version__,
-        figure_classes=["spatial_fold_map","presence_background_distribution","RM_FC_development","paired_LST","final_predictions","OOF_uncertainty","background_sensitivity"])
+        figure_classes=["spatial_fold_map","presence_background_distribution","RM_FC_development","fixed_B1_paired_LST","final_predictions","OOF_uncertainty","background_sensitivity","selected_primary_pipeline_agreement"])
     manifest["outputs"]={str(p.relative_to(out)):{"sha256":sha256(p),"bytes":p.stat().st_size} for p in out.rglob("*") if p.is_file() and p.name!="manifest.json"}
     write_json(out/"manifest.json",manifest)
     return manifest
@@ -486,7 +764,7 @@ def main():
         if not all((a.run,a.inputs,a.splits)):p.error("--run --inputs --splits are required for preparation")
         result=prepare_reports(a.run,a.inputs,a.splits,a.out,a.allow_incomplete,a.plot_stride)
         if not a.prepare_only:result=render_figures(a.out)
-    print(json.dumps({"status":result["status"],"out":str(a.out),"locked_test_metrics_read":False,"gate_eligible":False}))
+    print(json.dumps({"status":result["status"],"out":str(a.out),"locked_test_metrics_used":False,"locked_test_metrics_file_read":False,"gate_eligible":False}))
 
 
 if __name__=="__main__":

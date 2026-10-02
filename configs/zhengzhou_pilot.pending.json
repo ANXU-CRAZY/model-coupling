@@ -69,7 +69,11 @@
         "no_lst": "B1_uniform",
         "static_lst": "B1_uniform"
       }
-    }
+    },
+    "lst_spatial_comparison_fitted_background": "B1_uniform",
+    "primary_spatial_agreement_is_isolated_lst_effect": false,
+    "outer_primary_omission_constraint_fallbacks": 6,
+    "final_selection_omission_constraint_fallbacks": 0
   },
   "validation": {
     "locked_test_data": "Internal spatial holdout; consumed once after final feature/background selection freeze in maxent_formal_v1_003",
@@ -91,8 +95,8 @@
     "strict_end_to_end_oof": false,
     "gate_eligible": false,
     "oof_export": "local_work/zhengzhou_pilot/maxent_formal_v1_003/oof_export_002",
-    "spatial_oof_audit": "local_work/zhengzhou_pilot/maxent_formal_v1_003/audit/final_spatial_oof_audit_002.json",
-    "evaluation": "local_work/zhengzhou_pilot/maxent_formal_v1_003/cv_evaluation_003"
+    "spatial_oof_audit": "local_work/zhengzhou_pilot/maxent_formal_v1_003/audit/final_spatial_oof_audit_20261002.json",
+    "evaluation": "local_work/zhengzhou_pilot/maxent_formal_v1_003/cv_evaluation_004"
   },
   "invest": {
     "archival_hq_available": true,
@@ -105,7 +109,11 @@
     "local_class_crosswalk_confirmed": false,
     "proposed_threat_sensitivity_designs": 18,
     "evidence_packet": "local_work/zhengzhou_pilot/evidence_packet_001",
-    "new_model_run": false
+    "new_model_run": false,
+    "readiness_audit": "local_work/zhengzhou_pilot/habitat_readiness_audit_002",
+    "missing_pixels_in_maxent_common_domain": 3533,
+    "missing_pixels_in_maxent_oof_domain": 2560,
+    "formal_calibration_ready": false
   },
   "gate": {
     "base_oof_artifacts": "local_work/zhengzhou_pilot/maxent_formal_v1_003/oof_export_002",
@@ -118,12 +126,16 @@
     "real_supervision_labels_created": 0,
     "editable_review_workbook_available_locally": true,
     "real_model_trained": false,
-    "missing_targets_are_zero": false
+    "missing_targets_are_zero": false,
+    "supervision_lineage_audit": "local_work/zhengzhou_pilot/supervision_lineage_audit_002",
+    "nd_same_source_events": 7728,
+    "non_nd_coordinate_and_independence_review_pending_events": 679
   },
   "management": {
     "restoration_feasibility_a": null,
     "matched_habitat_suitability_hj": null,
     "restoration_score_generated": false,
     "conservation_output": "Exploratory historical geometric/linear/minimum controls only"
-  }
+  },
+  "last_results_audit_date": "2026-10-02"
 }

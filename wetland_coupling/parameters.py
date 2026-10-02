@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import rasterio
 from scipy.stats import qmc
 
 from .audit import file_sha256, save_json
@@ -56,8 +57,68 @@ def sample_prior(spec, members=32, seed=42):
     return df
 
 
+def _source_record(path):
+    path = Path(path).resolve()
+    if not path.is_file():
+        raise FileNotFoundError(f"Required InVEST input file missing: {path}")
+    return {"path": str(path), "sha256": file_sha256(path), "bytes": path.stat().st_size}
+
+
+def _raster_source_record(path, *, lulc=False):
+    """Check file contents and record geometry; no ecological approval is implied."""
+    record = _source_record(path)
+    try:
+        with rasterio.open(record["path"]) as ds:
+            if ds.count != 1 or ds.crs is None:
+                raise ValueError(f"Expected a georeferenced single-band raster: {path}")
+            if lulc:
+                if not ds.crs.is_projected or ds.crs.linear_units not in ("metre", "meter"):
+                    raise ValueError("LULC CRS linear units must be metres for max_dist")
+                if not np.issubdtype(np.dtype(ds.dtypes[0]), np.integer):
+                    raise ValueError("LULC must use an integer raster datatype")
+            valid_count, codes = 0, set()
+            minimum, maximum = np.inf, -np.inf
+            for _, window in ds.block_windows(1):
+                values = ds.read(1, window=window, masked=True).compressed()
+                if not np.isfinite(values).all():
+                    raise ValueError(f"Unmasked non-finite raster values: {path}")
+                if not values.size:
+                    continue
+                valid_count += values.size
+                minimum, maximum = min(minimum, values.min()), max(maximum, values.max())
+                if lulc:
+                    codes.update(int(value) for value in np.unique(values))
+                elif np.any((values < 0) | (values > 1)):
+                    raise ValueError(f"Threat raster values must be between 0 and 1: {path}")
+            if not valid_count:
+                raise ValueError(f"Raster has no valid pixels: {path}")
+            record["raster"] = {
+                "crs": ds.crs.to_string(), "width": ds.width, "height": ds.height,
+                "transform": list(ds.transform)[:6], "resolution": list(ds.res),
+                "dtype": ds.dtypes[0], "valid_pixels": int(valid_count),
+                "min": float(minimum), "max": float(maximum),
+            }
+            # External masks/metadata may affect raster reads; retain their hashes too.
+            record["supporting_files"] = [
+                _source_record(item) for item in ds.files
+                if Path(item).resolve() != Path(record["path"])
+            ]
+            if lulc:
+                record["raster"]["lucodes"] = sorted(codes)
+                # Official 3.16.1 aligns to the smaller axis size as square pixels.
+                record["raster"]["hq_working_pixel_size_m"] = float(min(ds.res))
+    except rasterio.errors.RasterioError as exc:
+        raise ValueError(f"Cannot read InVEST raster: {path}") from exc
+    if file_sha256(record["path"]) != record["sha256"]:
+        raise ValueError(f"Raster changed during input validation: {path}")
+    return record
+
+
 def make_run_plan(spec_path, threats_path, sensitivity_path, lulc_path, output, members=32, seed=42):
     """Materialize each member's CSVs and args. No run or calibration is implied."""
+    # Validate and inventory every source before creating any member directory.
+    sources = {"prior": _source_record(spec_path), "threats_table": _source_record(threats_path),
+               "sensitivity_table": _source_record(sensitivity_path)}
     spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
     samples = sample_prior(spec, members, seed)
     threats = pd.read_csv(threats_path)
@@ -68,6 +129,21 @@ def make_run_plan(spec_path, threats_path, sensitivity_path, lulc_path, output, 
         raise ValueError("Sensitivity table must use lucode and habitat")
     if threats.threat.duplicated().any() or sensitivity.lucode.duplicated().any():
         raise ValueError("Duplicate threat/LULC codes")
+    if threats.empty or sensitivity.empty or threats.threat.isna().any():
+        raise ValueError("Threat and sensitivity tables must contain named rows")
+    threats["threat"] = threats.threat.astype(str)
+    if (threats.threat.str.strip() == "").any():
+        raise ValueError("Threat names must not be blank")
+    codes = pd.to_numeric(sensitivity.lucode, errors="raise").to_numpy()
+    if not np.isfinite(codes).all() or np.any(codes != np.floor(codes)):
+        raise ValueError("Sensitivity lucode values must be finite integers")
+    sensitivity["lucode"] = codes.astype(np.int64)
+    if sensitivity.lucode.duplicated().any():
+        raise ValueError("Duplicate sensitivity LULC codes after numeric normalization")
+    sources["lulc"] = _raster_source_record(lulc_path, lulc=True)
+    missing_codes = set(sources["lulc"]["raster"]["lucodes"]) - set(sensitivity.lucode)
+    if missing_codes:
+        raise ValueError(f"LULC raster codes missing from sensitivity table: {sorted(missing_codes)}")
     for p in spec["parameters"]:
         parts = p["key"].split(":")
         if parts[0] in ("weight", "distance") and parts[1] not in set(threats.threat):
@@ -77,16 +153,24 @@ def make_run_plan(spec_path, threats_path, sensitivity_path, lulc_path, output, 
         if parts[0] == "sensitivity" and (int(parts[1]) not in set(sensitivity.lucode) or parts[2] not in sensitivity.columns):
             raise ValueError(f"Unknown sensitivity: {p['key']}")
     # Keep absolute threat paths when writing tables into member-specific directories.
+    sources["threat_rasters"] = []
     for col in ("cur_path", "base_path", "fut_path"):
         if col in threats:
             threats[col] = threats[col].map(lambda p: str((Path(threats_path).resolve().parent / str(p)).resolve())
                                           if pd.notna(p) and str(p).strip() else "")
+            for row in threats.to_dict("records"):
+                if not row[col]:
+                    if col == "cur_path":
+                        raise ValueError(f"Current threat path missing: {row['threat']}")
+                    continue
+                record = _raster_source_record(row[col])
+                record.update(threat=row["threat"], table_column=col)
+                sources["threat_rasters"].append(record)
     output = Path(output)
-    output.mkdir(parents=True, exist_ok=False)
-    entries = []
+    prepared = []
+    minimum_distance = sources["lulc"]["raster"]["hq_working_pixel_size_m"]
     for row in samples.to_dict("records"):
-        member = output/row.pop("member_id")
-        member.mkdir()
+        member_id = row.pop("member_id")
         tt, ss = threats.copy(), sensitivity.copy()
         half = spec.get("fixed_half_saturation_constant")
         for key, value in row.items():
@@ -104,6 +188,8 @@ def make_run_plan(spec_path, threats_path, sensitivity_path, lulc_path, output, 
         unit_interval(tt.weight, "threat weight", allow_nan=False)
         if tt.weight.sum() <= 0 or not np.isfinite(tt.max_dist).all() or (tt.max_dist<=0).any():
             raise ValueError("Invalid threat weights/distances")
+        if (tt.max_dist < minimum_distance).any():
+            raise ValueError(f"max_dist in metres must be >= LULC working pixel size ({minimum_distance:g} m)")
         if not tt.decay.isin(["linear", "exponential"]).all():
             raise ValueError("Invalid threat decay")
         unit_interval(ss.habitat, "H_j", allow_nan=False)
@@ -113,6 +199,15 @@ def make_run_plan(spec_path, threats_path, sensitivity_path, lulc_path, output, 
             unit_interval(ss[threat], f"sensitivity:{threat}", allow_nan=False)
         if half is None or not np.isfinite(half) or half<=0:
             raise ValueError("Specify a positive half saturation constant with evidence")
+        prepared.append((member_id, tt, ss, float(half)))
+    for record in (sources["prior"], sources["threats_table"], sources["sensitivity_table"]):
+        if file_sha256(record["path"]) != record["sha256"]:
+            raise ValueError(f"Input changed during plan preparation: {record['path']}")
+    output.mkdir(parents=True, exist_ok=False)
+    entries = []
+    for member_id, tt, ss, half in prepared:
+        member = output/member_id
+        member.mkdir()
         tt.to_csv(member/"threats.csv", index=False)
         ss.to_csv(member/"sensitivity.csv", index=False)
         args = {"workspace_dir": str((member/"official_output").resolve()), "results_suffix": "",
@@ -121,11 +216,15 @@ def make_run_plan(spec_path, threats_path, sensitivity_path, lulc_path, output, 
                 "sensitivity_table_path": str((member/"sensitivity.csv").resolve()),
                 "half_saturation_constant": float(half), "n_workers": -1}
         save_json(member/"args.json", args)
-        entries.append({"member_id": member.name, "args_path": str((member/"args.json").resolve())})
+        entries.append({"member_id": member.name, "args_path": str((member/"args.json").resolve()),
+                        "generated_inputs": {name: _source_record(member/name)
+                                             for name in ("args.json", "threats.csv", "sensitivity.csv")}})
     samples.to_csv(output/"parameter_samples.csv", index=False)
     manifest = {"status": "PRIOR_RUN_PLAN_ONLY", "target_invest_version": "3.16.1", "distance_unit": "m",
                 "members": entries, "seed": seed,
-                "prior_sha256": file_sha256(spec_path),
+                "prior_sha256": sources["prior"]["sha256"], "source_inputs": sources,
+                "source_validation": "Readable files, raster domains and interface units; ecological validity not established",
+                "official_source_reference": "https://github.com/natcap/invest/blob/3.16.1/src/natcap/invest/habitat_quality.py",
                 "uncertainty_type": "Uncalibrated prior exploration, not a Bayesian posterior",
                 "calibration": "NOT_RUN; reserve calibration/tuning data within base training groups"}
     save_json(output/"plan.json", manifest)

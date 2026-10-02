@@ -248,6 +248,13 @@ class ParameterContracts(unittest.TestCase):
             pd.DataFrame({"threat":["urban"],"max_dist":[1500.],"weight":[1.],
                           "decay":["linear"],"cur_path":["threat.tif"]}).to_csv(p/"threats.csv",index=False)
             pd.DataFrame({"lucode":[1],"habitat":[1.],"urban":[.5]}).to_csv(p/"sensitivity.csv",index=False)
+            import rasterio
+            from rasterio.transform import from_origin
+            for name, dtype, value in (("lulc.tif", "uint8", 1), ("threat.tif", "float32", .5)):
+                with rasterio.open(p/name, "w", driver="GTiff", width=2, height=2,
+                                   count=1, dtype=dtype, crs="EPSG:32649",
+                                   transform=from_origin(657500, 3875600, 100, 100)) as dst:
+                    dst.write(np.full((2, 2), value, dtype=dtype), 1)
             plan = make_run_plan(p/"prior.json",p/"threats.csv",p/"sensitivity.csv",p/"lulc.tif",p/"plan",2)
             self.assertEqual(plan["status"],"PRIOR_RUN_PLAN_ONLY")
             tt = pd.read_csv(p/"plan/invest_0000/threats.csv")

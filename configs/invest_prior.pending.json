@@ -5,12 +5,12 @@
   "fixed_half_saturation_constant": null,
   "comment": "Null bounds deliberately prevent unsupported parameter sampling. Fill local evidence and use status=evidence_reviewed after documented team review.",
   "parameters": [
-    {"key": "weight:urban", "low": null, "high": null, "evidence": null},
-    {"key": "weight:human", "low": null, "high": null, "evidence": null},
-    {"key": "weight:light", "low": null, "high": null, "evidence": null},
-    {"key": "distance:urban", "low": null, "high": null, "evidence": null},
-    {"key": "distance:human", "low": null, "high": null, "evidence": null},
-    {"key": "distance:light", "low": null, "high": null, "evidence": null},
+    {"key": "weight:urban_structure", "low": null, "high": null, "evidence": null},
+    {"key": "weight:human_activity", "low": null, "high": null, "evidence": null},
+    {"key": "weight:night_light", "low": null, "high": null, "evidence": null},
+    {"key": "distance:urban_structure", "low": null, "high": null, "evidence": null},
+    {"key": "distance:human_activity", "low": null, "high": null, "evidence": null},
+    {"key": "distance:night_light", "low": null, "high": null, "evidence": null},
     {"key": "half_saturation_constant", "low": null, "high": null, "evidence": null}
   ]
 }
