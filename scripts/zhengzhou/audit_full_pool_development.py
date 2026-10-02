@@ -189,7 +189,7 @@ def main():
             if prediction is not None:refits[(season,row['variant'],row['scope'],row['background'])]=prediction
         print(json.dumps({'audit_season':season,'completed_scopes_audited':len(scopes),'models_audited':len(numerical)}),flush=True)
         del ctx;gc.collect()
-    paired=[];summary=[];oof=[];choices=[];stability=[];selected_inner_paths=set();lst_pairs=[];lst_summary=[]
+    paired=[];summary=[];oof=[];choices=[];scheme_choices=[];stability=[];selected_inner_paths=set();scheme_inner_paths=set();lst_pairs=[];lst_summary=[]
     if not args.partial:
         if len(numerical)!=3528 or len(checkpoints)!=360:raise ValueError('Completed model/scope counts differ')
         for name,meta in state['outputs'].items():
@@ -229,11 +229,26 @@ def main():
                     if label=='full_development':
                         actual=final_feature_plan(ctx,plan['development_fit_mask'],chosen['background'],variant,config,seeded(config['seed'],f"{season}/frozen_final/{chosen['background']}"))
                         if actual!=selections[season]['final_features'][variant]:raise ValueError('Deployment fit-only feature plan changed')
-                    choices.append({'season':season,'scope':label,'variant':variant,**chosen})
+                    choices.append({'season':season,'scope':label,'variant':variant,
+                        'selection_role':'future_deployment_candidate' if label=='full_development' else 'primary_background_selection_candidate',**chosen})
+                    actual_primary=chosen if label=='full_development' else tuning['scheme_winners'][variant][chosen['background']]
                     selected_inner_paths.update(str(Path(r['artifact']).resolve()) for r in records if
-                        r['variant']==variant and r['background']==chosen['background'] and r['rm']==chosen['rm'] and r['fc']==chosen['fc'])
+                        r['variant']==variant and r['background']==actual_primary['background'] and r['rm']==actual_primary['rm'] and r['fc']==actual_primary['fc'])
                     for background in SCHEMES:
-                        if choose_candidate([r for r in aggregate if r['variant']==variant and r['background']==background],config['selection']['mean_omission_eligibility_max'])!=tuning['scheme_winners'][variant][background]:raise ValueError('Background winner mismatch')
+                        candidate=choose_candidate([r for r in aggregate if r['variant']==variant and r['background']==background],config['selection']['mean_omission_eligibility_max'])
+                        if candidate!=tuning['scheme_winners'][variant][background]:raise ValueError('Background winner mismatch')
+                        scheme_choices.append({'season':season,'scope':label,'variant':variant,**candidate})
+                        scheme_inner_paths.update(str(Path(r['artifact']).resolve()) for r in records if
+                            r['variant']==variant and r['background']==background and r['rm']==candidate['rm'] and r['fc']==candidate['fc'])
+                        if label!='full_development':
+                            fold_number=int(label.split('_')[1])
+                            result_row=outer.loc[(outer.season==season)&(outer.variant==variant)&(outer.fold==fold_number)&(outer.background==background)]
+                            if len(result_row)!=1:raise ValueError('Missing outer result')
+                            result_row=result_row.iloc[0].to_dict()
+                            done=load(run/variant/season/label/'refit'/background/'completed.json')
+                            if result_row['rm']!=candidate['rm'] or result_row['fc']!=candidate['fc'] or bool(result_row['chosen_background'])!=(background==chosen['background']):raise ValueError('Actual outer model selection differs')
+                            if result_row['artifact']!=done['provenance']['engine_manifest']:raise ValueError('Outer artifact differs')
+                            metric_match(done['metrics'],result_row)
                 if label=='full_development' and choose_candidate(aggregate,config['selection']['mean_omission_eligibility_max'])!=selections[season]['deployment_choice']:raise ValueError('Joint candidate mismatch')
             for variant in VARIANTS:
                 path=run/'oof'/f'{season}_{variant}.npz';consumed.add(path)
@@ -277,6 +292,7 @@ def main():
     pd.DataFrame(numerical).to_csv(out/'model_convergence.csv',index=False)
     pd.DataFrame(summary).to_csv(out/'paired_B1_summary.csv',index=False)
     pd.DataFrame(choices).to_csv(out/'inner_selected_candidates.csv',index=False)
+    pd.DataFrame(scheme_choices).to_csv(out/'background_specific_candidates.csv',index=False)
     pd.DataFrame(stability).to_csv(out/'paired_raster_stability.csv',index=False)
     pd.DataFrame(lst_pairs).to_csv(out/'lst_paired_outer_metrics.csv',index=False)
     pd.DataFrame(lst_summary).to_csv(out/'lst_development_summary.csv',index=False)
@@ -300,6 +316,10 @@ def main():
         'convergence_unverified':sum(not r['convergence_verified'] for r in numerical),
         'chosen_candidate_inner_models':sum(r['engine_manifest'] in selected_inner_paths for r in numerical),
         'chosen_candidate_inner_iteration_limit_reached':sum(bool(r['iteration_limit_reached']) for r in numerical if r['engine_manifest'] in selected_inner_paths),
+        'background_specific_candidate_inner_models':sum(r['engine_manifest'] in scheme_inner_paths for r in numerical),
+        'background_specific_candidate_inner_iteration_limit_reached':sum(bool(r['iteration_limit_reached']) for r in numerical if r['engine_manifest'] in scheme_inner_paths),
+        'primary_background_or_deployment_omission_constraint_failures':sum(bool(r['omission_constraint_failed']) for r in choices),
+        'background_specific_omission_constraint_failures':sum(bool(r['omission_constraint_failed']) for r in scheme_choices),
         'cleaned_projection_bytes':sum(r['cleaned_bytes'] for r in scopes),'oof':oof,'paired_B1':summary,
         'paired_raster_stability':stability,
         'lst_development_comparison':lst_summary,
