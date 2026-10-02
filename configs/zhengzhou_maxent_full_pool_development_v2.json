@@ -1,0 +1,141 @@
+{
+  "protocol_version": "zhengzhou_maxent_full_pool_development_v2",
+  "status": "FROZEN_FOR_DEVELOPMENT_ONLY_EXECUTION",
+  "seed": 20261001,
+  "scope_policy": "configs/zhengzhou_waterbird_scope.json",
+  "scope_status": "IWC_FAMILY_BASED_COMMUNITY_CANDIDATE_PENDING_SPECIES_REVIEW",
+  "data_window": "2014-2024 pooled pixel-season, not annual change",
+  "aoi": {
+    "mode": "native_common_valid_domain_methodological_exploration",
+    "formal_management_boundary_accepted": false,
+    "human_decision_required": "Confirm authoritative study/management AOI before management interpretation"
+  },
+  "grid": {
+    "epsg": 32649,
+    "resolution_m": 100
+  },
+  "spatial": {
+    "block_size_m": 10000,
+    "buffer_m": 1000,
+    "outer_folds": 3,
+    "inner_folds": 3,
+    "locked_test_fraction_target": 0.2,
+    "locked_test_name": "本轮预注册后锁定的内部空间测试集",
+    "assignment_seed_trials": 512,
+    "minimum_fit_presences": 20,
+    "minimum_validation_presences": 10,
+    "minimum_background": 20,
+    "minimum_counts_are_ecological_sufficiency_claims": false,
+    "all_seasons_and_lst_variants_share_group_mapping": true
+  },
+  "background": {
+    "schemes": [
+      "B0_target_group",
+      "B1_uniform",
+      "B2_visit_density_proxy"
+    ],
+    "is_absence": false,
+    "presence_background_overlap_allowed": true,
+    "uniform_points_per_fit": 3000,
+    "evaluation_reference": "common_B1_uniform_heldout_spatial_domain",
+    "bias_proxy": "ND inferred all-bird visit locations, fit groups only; not verified effort",
+    "kde_bandwidth_m": 1000,
+    "uniform_mixture_fraction": 0.1,
+    "bias_surface_uses_validation_or_locked_visits": false
+  },
+  "predictors": {
+    "candidate_provenance": "COMPLETE_SUPPLIED_25_VARIABLE_POOL_UPSTREAM_CURATION_UNVERIFIED",
+    "strict_end_to_end_oof": false,
+    "gate_eligible": false,
+    "fold_selection": "constant removal and deterministic greedy Spearman filter using fit-background only",
+    "absolute_spearman_cutoff": 0.7,
+    "tie_priority": "alphabetical predictor name, frozen before fits",
+    "selection_uses_validation_or_locked_predictors": false,
+    "source_period_units_and_selection_provenance_may_be_unverified": true
+  },
+  "lst": {
+    "variants": [
+      "no_lst",
+      "static_lst"
+    ],
+    "static_status": "STATIC_REFERENCE_THERMAL_COVARIATE_UNVERIFIED_PERIOD",
+    "seasonal_lst_available": false,
+    "same_outer_inner_split_and_common_valid_domain": true,
+    "independent_selection_and_tuning_per_variant": true
+  },
+  "maxent": {
+    "implementation": "official Java",
+    "version": "3.4.4",
+    "jar_sha256": "4c856e55412f70c5597b03cf9aaaf27e0782e0921f937262273b68bdcb8fee5e",
+    "rm": [
+      0.5,
+      1,
+      2,
+      4
+    ],
+    "fc": [
+      "L",
+      "LQ",
+      "LQH"
+    ],
+    "output_scale": "cloglog",
+    "calibrated_occurrence_probability": false,
+    "max_iterations": 500,
+    "parallel_workers": 1,
+    "java_heap_mb": 384,
+    "clamping": true,
+    "effective_java_random_seed": 0
+  },
+  "selection": {
+    "uses_only_inner_validation": true,
+    "omission_quantile": 0.1,
+    "mean_omission_eligibility_max": 0.2,
+    "eligible_rule": "Eligible candidates: mean omission <=0.2; otherwise retain minimum-omission candidates and flag constraint failure",
+    "auc_rule": "One-standard-error band of best eligible mean heldout-background AUC",
+    "tie_rule": "minimum mean nonzero feature count, minimum absolute train-validation AUC gap, higher RM, simpler FC, deterministic scheme/variant name",
+    "outer_metrics_select_inner_candidates": false,
+    "deployment_choice": "joint choice from full-development inner CV after outer audit; locked test excluded",
+    "threshold_tuned_on_validation": false
+  },
+  "uncertainty": {
+    "members": "Best inner-selected RM/FC from each background scheme, separately per LST variant and outer fold",
+    "summaries": [
+      "q05",
+      "median",
+      "q95",
+      "std",
+      "member_count"
+    ],
+    "confidence_interval": false,
+    "includes_input_all_model_or_gate_uncertainty": false
+  },
+  "locked_test": {
+    "evaluation": "DISABLED_PREVIOUS_TEST_ALREADY_CONSUMED",
+    "can_select_hyperparameters_predictors_lst_background_threshold_scaling": false,
+    "responses_excluded_from_prepared_tables": true
+  },
+  "metrics": {
+    "auc": "presence-versus-background Mann-Whitney rank statistic; ties receive half credit",
+    "omission": "below fit-presence 10th-percentile and minimum thresholds",
+    "complexity": "nonzero official lambda feature count",
+    "continuous_boyce_index": "NOT_AVAILABLE_NO_VALIDATED_DEPENDENCY",
+    "spatial_stability": "paired raster rank correlation, top-decile overlap and member standard deviation"
+  },
+  "inputs": {
+    "candidate_tables": "full_pool_development_v2/inputs",
+    "environment": "audited archive directly, no ASC extraction",
+    "parent_inputs": "maxent_formal_v1_001/inputs"
+  },
+  "complete_pool": {
+    "archive_sha256": "88589b86cba9d078952845df320abf47394eb3e2840233be2282c8dfc56d5210",
+    "parent_input_manifest_sha256": "31e77eb4b760786eed6f36b6e82da188d11a6ff28baa2073bf184a30af4ffea1",
+    "parent_split_manifest_sha256": "d7685f5178713ecc4f8d179c792325136552ca524c1118af6c8d35ebf65ca768",
+    "parent_config_sha256": "6c191ad8e6d68e6620ef8e15f39cc22cd438d040d1ad0910feac4eef2d00b4ea",
+    "supplied_variables_per_season": 25,
+    "non_lst_variables_per_season": 23,
+    "full_development_inner_tuning": true,
+    "deployment_refit_in_this_run": false,
+    "reuse_split_reason": "Full pool agrees on the frozen native common domain; existing development folds retained for paired descriptive comparison",
+    "claims": "Fold-local screening of the supplied complete pool; upstream curation, periods, units and QC remain unverified"
+  }
+}
