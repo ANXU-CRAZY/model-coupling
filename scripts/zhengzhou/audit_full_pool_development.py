@@ -33,6 +33,11 @@ def metric_match(rebuilt,recorded):
         elif isinstance(value,(int,float,bool)):close([value],[other],'Metric mismatch: '+key,atol=1e-12)
 
 
+def validate_source_snapshot(root,records):
+    for name,expected in records.items():
+        if sha256(root/name)!=expected:raise ValueError('Audit source changed during execution: '+name)
+
+
 def validate_cleanup_receipt(scope,manifests):
     """Check that every deletion receipt covers only official projection inputs."""
     receipt=load(scope/'projection_cleanup.json')
@@ -161,6 +166,9 @@ def main():
     root=Path(__file__).resolve().parents[2];run=args.run.resolve();out=args.out.resolve();out.relative_to(root/'local_work')
     if out.exists():raise FileExistsError(out)
     state=load(run/'manifests/run_manifest.json');config=load(run/'manifests/config_snapshot.json')
+    provenance=postprocessing_provenance(state['git_commit'])
+    provenance['source_code_sha256'].update({str(p.relative_to(root)):sha256(p) for p in
+        [Path(__file__).resolve(),root/'scripts/zhengzhou/run_full_pool_development.py',root/'scripts/zhengzhou/run_maxent_nested_cv.py',*(root/'wetland_coupling').glob('maxent_*.py')]})
     if not args.partial and state['status']!='DEVELOPMENT_NESTED_CV_COMPLETE':raise ValueError('Training not complete')
     if state['locked_test_used'] or (run/'manifests/LOCKED_TEST_ATTEMPT.json').exists() or list(run.rglob('locked_test_metrics.csv')):raise ValueError('Forbidden test activity')
     for name,expected in state['source_code_sha256'].items():
@@ -273,8 +281,10 @@ def main():
                         if not np.array_equal(np.isfinite(old_oof['M_oof']),expected) or not np.array_equal(old_oof['fold'],data['fold']):raise ValueError('V1 paired raster domain/fold mismatch')
                         a=old_oof['M_oof'][expected];b=data['M_oof'][expected]
                         ta=a>=np.quantile(a,.9);tb=b>=np.quantile(b,.9)
-                        stability.append({'season':season,'variant':variant,'paired_cells':len(a),'spearman':float(spearmanr(a,b).statistic),
-                            'top_decile_jaccard':float(np.sum(ta&tb)/np.sum(ta|tb)),'ties_retained_at_quantile':True,'descriptive_only':True})
+                        constant=bool(np.ptp(a)==0 or np.ptp(b)==0)
+                        stability.append({'season':season,'variant':variant,'paired_cells':len(a),'spearman':None if constant else float(spearmanr(a,b).statistic),
+                            'top_decile_jaccard':None if constant else float(np.sum(ta&tb)/np.sum(ta|tb)),
+                            'constant_prediction':constant,'ties_retained_at_quantile':True,'descriptive_only':True})
             del ctx;gc.collect()
         parent_path=args.parent_run/'reports/outer_metrics.csv'
         if sha256(parent_path)!=parent_records['reports/outer_metrics.csv']['sha256']:raise ValueError('V1 outer metrics changed')
@@ -329,9 +339,7 @@ def main():
         'run_started_at_utc':state['started_at_utc'],'audit_ended_at_utc':stamp()}
     write_json(out/'summary.json',report)
     consumed.add(run/'manifests/parent_protection_snapshot.json')
-    provenance=postprocessing_provenance(state['git_commit'])
-    provenance['source_code_sha256'].update({str(p.relative_to(root)):sha256(p) for p in
-        [Path(__file__).resolve(),root/'scripts/zhengzhou/run_full_pool_development.py',root/'scripts/zhengzhou/run_maxent_nested_cv.py',*(root/'wetland_coupling').glob('maxent_*.py')]})
+    validate_source_snapshot(root,provenance['source_code_sha256'])
     manifest={'status':report['status'],'argv':sys.argv,'provenance':provenance,
         'run_snapshot_sha256':sha256(out/'run_snapshot.json'),'inputs':{str(p.resolve()):{'sha256':sha256(p),'bytes':p.stat().st_size} for p in sorted(consumed)},
         'outputs':{str(p.relative_to(out)):{'sha256':sha256(p),'bytes':p.stat().st_size} for p in out.iterdir() if p.is_file()}}

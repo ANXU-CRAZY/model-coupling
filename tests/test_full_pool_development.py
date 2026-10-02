@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from scripts.zhengzhou import run_full_pool_development as runner
-from scripts.zhengzhou.audit_full_pool_development import prediction_values, validate_cleanup_receipt
+from scripts.zhengzhou.audit_full_pool_development import prediction_values, validate_cleanup_receipt, validate_source_snapshot
 from wetland_coupling.maxent_protocol import sha256, write_json
 from wetland_coupling.maxent_splits import build_spatial_split_plan, save_spatial_split_plan
 
@@ -93,6 +93,13 @@ class FullPoolDevelopmentContracts(unittest.TestCase):
             receipt=runner.load(scope/'projection_cleanup.json');receipt['files'][0]['sha256']='changed'
             write_json(scope/'projection_cleanup.json',receipt)
             with self.assertRaisesRegex(ValueError,'not a verified projection input'):validate_cleanup_receipt(scope,[manifest])
+
+    def test_audit_source_change_between_start_and_finish_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);source=root/'audit.py';source.write_text('frozen audit code',encoding='utf-8')
+            recorded={'audit.py':sha256(source)};validate_source_snapshot(root,recorded)
+            source.write_text('different audit code',encoding='utf-8')
+            with self.assertRaisesRegex(ValueError,'Audit source changed during execution'):validate_source_snapshot(root,recorded)
 
     def test_changed_retained_training_data_fails(self):
         with tempfile.TemporaryDirectory() as directory:
