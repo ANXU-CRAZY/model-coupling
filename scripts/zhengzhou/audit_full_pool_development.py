@@ -15,7 +15,7 @@ from scipy.stats import spearmanr
 
 from scripts.zhengzhou.run_full_pool_development import load, development_split_plan, audit_engine
 from scripts.zhengzhou.run_maxent_nested_cv import context, mask_rows, seeded, final_feature_plan, SEASONS, VARIANTS, SCHEMES, stamp
-from scripts.zhengzhou.evaluate_maxent_cv import parse_convergence
+from scripts.zhengzhou.evaluate_maxent_cv import parse_convergence, paired_outer_lst_metrics, postprocessing_provenance
 from wetland_coupling.maxent_inputs import sample_background, dataframe_cells
 from wetland_coupling.maxent_protocol import sha256, write_json, select_predictors, metrics, aggregate_candidates, choose_candidate, assert_oof_groups
 
@@ -49,7 +49,7 @@ def prediction_values(engine,expected_coordinates=None):
     return values
 
 
-def scope_audit(checkpoint,run,ctx,plan,config,consumed):
+def scope_audit(checkpoint,run,ctx,plan,config,consumed,parent_run):
     done=load(checkpoint);parts=checkpoint.relative_to(run).parts
     variant,season,label,stage,background=parts[:5]
     if label=='full_development':
@@ -72,6 +72,19 @@ def scope_audit(checkpoint,run,ctx,plan,config,consumed):
         if list(saved.columns)!=['species','longitude','latitude',*selected]:raise ValueError('Actual fit columns differ')
         close(saved.iloc[:,1:],source[['longitude','latitude',*selected]],'Actual fit values differ',atol=5.1e-10)
         consumed.add(scope/filename)
+    parent_scope=parent_run/variant/season/label/stage/background
+    parent_engine_path=parent_scope/('rm0.5_L' if stage.startswith('inner_') else 'official_model')/'manifest.json'
+    parent_engine=load(parent_engine_path)
+    if parent_engine['status']!='OFFICIAL_MAXENT_FITTED':raise ValueError('Parent paired fit incomplete')
+    for filename,key,source in (('train.csv','train',train),('background.csv','background',bg)):
+        parent_file=parent_scope/filename
+        if sha256(parent_file)!=parent_engine['inputs'][key]['sha256']:raise ValueError('Parent paired fit table changed')
+        old=pd.read_csv(parent_file,usecols=['longitude','latitude'])
+        close(old,source[['longitude','latitude']],'Paired V1/V2 fit sample coordinates differ',atol=5.1e-10)
+        consumed.add(parent_file)
+    parent_selection=load(parent_scope/'selection.json')
+    if parent_selection['background_audit']['sampled_cell_ids_sha256']!=selection['background_audit']['sampled_cell_ids_sha256']:raise ValueError('Paired background cells differ')
+    consumed.update([parent_engine_path,parent_scope/'selection.json'])
     if selection['background_audit']!=bg.attrs['background_audit']:raise ValueError('Fit-only background differs')
     pieces=[train,mask_rows(ctx['reference'],fold['fit_mask']),mask_rows(ctx['presence'],fold['validation_mask']),mask_rows(ctx['reference'],fold['validation_mask'])]
     offsets=np.cumsum([0,*[len(f) for f in pieces]]).tolist()
@@ -112,8 +125,8 @@ def scope_audit(checkpoint,run,ctx,plan,config,consumed):
     receipt=load(scope/'projection_cleanup.json')
     if receipt['status']!='REMOVED' or any(Path(r['path']).exists() for r in receipt['files']):raise ValueError('Projection cleanup incomplete')
     return {'season':season,'variant':variant,'scope':label,'stage':stage,'background':background,'candidate_count':len(candidates),
-        'selected_count':len(selected),'train_presence_n':len(train),'train_background_n':len(bg),'models':len(records),
-        'cleaned_bytes':receipt['bytes'],'candidate_schema_and_fit_only_selection_verified':True},numerical,refit_prediction
+        'selected_count':len(selected),'predictors':';'.join(selected),'train_presence_n':len(train),'train_background_n':len(bg),'models':len(records),
+        'cleaned_bytes':receipt['bytes'],'candidate_schema_and_fit_only_selection_verified':True,'paired_parent_fit_cells_equal':True},numerical,refit_prediction
 
 
 def main():
@@ -132,6 +145,10 @@ def main():
     for name,meta in input_manifest['outputs'].items():
         if sha256(args.inputs/name)!=meta['sha256']:raise ValueError('Prepared input changed')
     plan=development_split_plan(args.splits);consumed=set([args.inputs/'manifest.json',args.splits/'manifest.json',run/'manifests/config_snapshot.json'])
+    if not args.partial:
+        for name,meta in input_manifest['inputs'].items():
+            if sha256(name)!=meta['sha256']:raise ValueError('Input source changed: '+name)
+            consumed.add(Path(name))
     protected=load(run/'manifests/parent_protection_snapshot.json')
     for name,meta in protected['files'].items():
         if sha256(name)!=meta['sha256']:raise ValueError('Parent protected file changed')
@@ -142,21 +159,38 @@ def main():
         ctx=context(args.inputs,season)
         for checkpoint in checkpoints:
             if checkpoint.relative_to(run).parts[1]!=season:continue
-            row,convergence,prediction=scope_audit(checkpoint,run,ctx,plan,config,consumed)
+            row,convergence,prediction=scope_audit(checkpoint,run,ctx,plan,config,consumed,args.parent_run)
             scopes.append(row);numerical.extend(convergence)
             if prediction is not None:refits[(season,row['variant'],row['scope'],row['background'])]=prediction
         print(json.dumps({'audit_season':season,'completed_scopes_audited':len(scopes),'models_audited':len(numerical)}),flush=True)
         del ctx;gc.collect()
-    paired=[];summary=[];oof=[];choices=[];stability=[];selected_inner_paths=set()
+    paired=[];summary=[];oof=[];choices=[];stability=[];selected_inner_paths=set();lst_pairs=[];lst_summary=[]
     if not args.partial:
         if len(numerical)!=3528 or len(checkpoints)!=360:raise ValueError('Completed model/scope counts differ')
         for name,meta in state['outputs'].items():
             if sha256(run/name)!=meta['sha256']:raise ValueError('Final output changed')
         outer=pd.read_csv(run/'reports/outer_metrics.csv')
         if len(outer)!=72 or outer.duplicated(['season','variant','fold','background']).any():raise ValueError('Outer table completeness')
+        lst_pairs=paired_outer_lst_metrics(outer,['validation_auc','omission_10','auc_gap','complexity'])
+        for season,frame in pd.DataFrame(lst_pairs).groupby('season'):
+            lst_summary.append({'season':season,'folds':len(frame),
+                'static_minus_no_auc_mean':float(frame.validation_auc_static_minus_no_lst.mean()),
+                'static_minus_no_auc_sd':float(frame.validation_auc_static_minus_no_lst.std(ddof=1)),
+                'static_minus_no_omission10_mean':float(frame.omission_10_static_minus_no_lst.mean()),
+                'reference_background':'B1_uniform','descriptive_only':True})
         selections=load(run/'manifests/development_selection.json')['selections']
-        parent_state=load(args.parent_run/'manifests/run_manifest.json')
-        parent_records={k.replace('\\','/'):v for k,v in parent_state['outputs'].items()}
+        # Use the prior development postprocessing inventory, which has no test
+        # outcomes. Do not deserialize V1 run status containing test summaries.
+        parent_inventory=args.parent_run/'cv_evaluation_004/manifest.json'
+        parent_metadata=load(parent_inventory)
+        if parent_metadata['status']!='CV_POSTPROCESSING_COMPLETE' or parent_metadata['locked_test_metrics_used']:
+            raise ValueError('Prior development inventory unavailable')
+        parent_records={}
+        for name,item in parent_metadata['inputs'].items():
+            try:key=Path(name).resolve().relative_to(args.parent_run.resolve()).as_posix()
+            except ValueError:continue
+            parent_records[key]=item
+        consumed.add(parent_inventory)
         for season in SEASONS:
             ctx=context(args.inputs,season)
             for label in [*[f"outer_{f['fold']}" for f in plan['outer_folds']],'full_development']:
@@ -184,6 +218,9 @@ def main():
                     for fold in plan['outer_folds']:
                         label=f"outer_{fold['fold']}";indices=np.flatnonzero(fold['validation_mask']);tuning=load(run/'reports'/f'tuning_{season}_{label}.json')
                         values=np.stack([refits[(season,variant,label,b)] for b in SCHEMES]);primary=SCHEMES.index(tuning['variant_winners'][variant]['background'])
+                        member_record=load(run/'oof'/f'{season}_{variant}_{label}_members.json')
+                        expected_manifests=[load(run/variant/season/label/'refit'/b/'completed.json')['provenance']['engine_manifest'] for b in SCHEMES]
+                        if member_record['members']!=expected_manifests or member_record['primary']!=expected_manifests[primary] or member_record['fit_and_tune_groups']!=fold['fit_groups'] or member_record['validation_groups']!=fold['validation_groups']:raise ValueError('OOF member provenance mismatch')
                         close(data['M_oof'][indices],values[primary],'OOF primary mismatch',atol=6e-8)
                         close(data['std'][indices],values.std(axis=0),'OOF uncertainty mismatch',atol=6e-8)
                         for key,values_q in zip(('q05','median','q95'),np.quantile(values,[.05,.5,.95],axis=0)):close(data[key][indices],values_q,'OOF quantile mismatch',atol=6e-8)
@@ -216,6 +253,20 @@ def main():
     pd.DataFrame(summary).to_csv(out/'paired_B1_summary.csv',index=False)
     pd.DataFrame(choices).to_csv(out/'inner_selected_candidates.csv',index=False)
     pd.DataFrame(stability).to_csv(out/'paired_raster_stability.csv',index=False)
+    pd.DataFrame(lst_pairs).to_csv(out/'lst_paired_outer_metrics.csv',index=False)
+    pd.DataFrame(lst_summary).to_csv(out/'lst_development_summary.csv',index=False)
+    frequencies=[]
+    scopes_frame=pd.DataFrame(scopes)
+    if not scopes_frame.empty:
+        for (season,variant,stage),frame in scopes_frame.groupby(['season','variant','stage']):
+            names=load(args.inputs/season/'names.json')
+            for variable in names:
+                if variant=='no_lst' and variable.startswith('lst_'):continue
+                retained=sum(variable in text.split(';') for text in frame.predictors)
+                frequencies.append({'season':season,'variant':variant,'stage':stage,'variable':variable,
+                    'fit_scopes':len(frame),'retained_scopes':retained,'retained_fraction':retained/len(frame),
+                    'frequency_is_not_causal_importance':True})
+    pd.DataFrame(frequencies).to_csv(out/'predictor_selection_frequency.csv',index=False)
     candidate_numerical=[r for r in numerical if r['candidate']];outer_numerical=[r for r in numerical if not r['candidate']]
     report={'status':'PARTIAL_COMPLETED_SCOPES_VALIDATED_NOT_FULL_RUN_APPROVAL' if args.partial else 'COMPLETE_SUPPLIED_POOL_DEVELOPMENT_AUDIT_PASSED_WITH_LIMITATIONS',
         'partial':args.partial,'checkpoints_audited':len(scopes),'models_audited':len(numerical),'inner_models':len(candidate_numerical),'outer_models':len(outer_numerical),
@@ -226,13 +277,17 @@ def main():
         'chosen_candidate_inner_iteration_limit_reached':sum(bool(r['iteration_limit_reached']) for r in numerical if r['engine_manifest'] in selected_inner_paths),
         'cleaned_projection_bytes':sum(r['cleaned_bytes'] for r in scopes),'oof':oof,'paired_B1':summary,
         'paired_raster_stability':stability,
+        'lst_development_comparison':lst_summary,
         'locked_test_used':False,'locked_metrics_read':False,'candidate_selection_modified':False,
         'strict_end_to_end_oof':False,'gate_eligible':False,'independent_management_labels':0,
         'limitations':['Supplied pool upstream curation, source period/units/QC unverified','Development folds previously used; comparison is descriptive','Pooled seasonal candidate community, no calibrated occurrence probability','No approved LULC crosswalk or independent HQ/management supervision'],
         'run_started_at_utc':state['started_at_utc'],'audit_ended_at_utc':stamp()}
     write_json(out/'summary.json',report)
     consumed.add(run/'manifests/parent_protection_snapshot.json')
-    manifest={'status':report['status'],'argv':sys.argv,'source_code_sha256':sha256(Path(__file__)),
+    provenance=postprocessing_provenance(state['git_commit'])
+    provenance['source_code_sha256'].update({str(p.relative_to(root)):sha256(p) for p in
+        [Path(__file__).resolve(),root/'scripts/zhengzhou/run_full_pool_development.py',root/'scripts/zhengzhou/run_maxent_nested_cv.py',*(root/'wetland_coupling').glob('maxent_*.py')]})
+    manifest={'status':report['status'],'argv':sys.argv,'provenance':provenance,
         'run_snapshot_sha256':sha256(out/'run_snapshot.json'),'inputs':{str(p.resolve()):{'sha256':sha256(p),'bytes':p.stat().st_size} for p in sorted(consumed)},
         'outputs':{str(p.relative_to(out)):{'sha256':sha256(p),'bytes':p.stat().st_size} for p in out.iterdir() if p.is_file()}}
     write_json(out/'manifest.json',manifest);print(json.dumps(report),flush=True)
