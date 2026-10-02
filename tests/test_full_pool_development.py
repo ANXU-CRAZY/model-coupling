@@ -1,4 +1,3 @@
-import copy
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from scripts.zhengzhou import run_full_pool_development as runner
-from scripts.zhengzhou.audit_full_pool_development import prediction_values
+from scripts.zhengzhou.audit_full_pool_development import prediction_values, validate_cleanup_receipt
 from wetland_coupling.maxent_protocol import sha256, write_json
 from wetland_coupling.maxent_splits import build_spatial_split_plan, save_spatial_split_plan
 
@@ -51,8 +50,8 @@ class FullPoolDevelopmentContracts(unittest.TestCase):
         (chunks/'projection_part00000.csv').write_text('reconstructable',encoding='utf-8')
         (model/'model.lambdas').write_text('retained lambda',encoding='utf-8')
         manifest=model/'manifest.json'
-        data={'status':'OFFICIAL_MAXENT_FITTED','inputs':{key:{'sha256':sha256(scope/(key+'.csv'))} for key in ('train','background')},
-            'input_paths':{key+'_csv':str(scope/(key+'.csv')) for key in ('train','background')},
+        data={'status':'OFFICIAL_MAXENT_FITTED','inputs':{key:{'sha256':sha256(scope/(key+'.csv'))} for key in ('train','background','projection')},
+            'input_paths':{key+'_csv':str(scope/(key+'.csv')) for key in ('train','background','projection')},
             'outputs':{str(p.relative_to(model)):{'sha256':sha256(p),'bytes':p.stat().st_size} for p in model.rglob('*') if p.is_file()}}
         write_json(manifest,data)
         return run,scope,manifest
@@ -73,6 +72,27 @@ class FullPoolDevelopmentContracts(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             _,_,manifest=self.fixture(directory);(manifest.parent/'model.lambdas').unlink()
             with self.assertRaisesRegex(ValueError,'Unaccounted missing output'):runner.audit_engine(manifest)
+
+    def test_cleanup_receipt_is_independently_bound_to_projection_input_hashes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run,scope,manifest=self.fixture(directory);runner.cleanup_projection(scope,[manifest],run)
+            receipt=validate_cleanup_receipt(scope,[manifest])
+            self.assertGreater(receipt['bytes'],0)
+
+    def test_forged_receipt_cannot_account_for_model_lambda_as_projection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run,scope,manifest=self.fixture(directory);runner.cleanup_projection(scope,[manifest],run)
+            receipt=runner.load(scope/'projection_cleanup.json');path=manifest.parent/'model.lambdas'
+            receipt['files'].append({'path':str(path.resolve()),'sha256':sha256(path),'bytes':path.stat().st_size})
+            receipt['bytes']=sum(r['bytes'] for r in receipt['files']);write_json(scope/'projection_cleanup.json',receipt)
+            with self.assertRaisesRegex(ValueError,'not a verified projection input'):validate_cleanup_receipt(scope,[manifest])
+
+    def test_changed_cleanup_projection_hash_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run,scope,manifest=self.fixture(directory);runner.cleanup_projection(scope,[manifest],run)
+            receipt=runner.load(scope/'projection_cleanup.json');receipt['files'][0]['sha256']='changed'
+            write_json(scope/'projection_cleanup.json',receipt)
+            with self.assertRaisesRegex(ValueError,'not a verified projection input'):validate_cleanup_receipt(scope,[manifest])
 
     def test_changed_retained_training_data_fails(self):
         with tempfile.TemporaryDirectory() as directory:

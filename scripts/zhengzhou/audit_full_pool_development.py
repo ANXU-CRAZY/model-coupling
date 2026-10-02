@@ -33,6 +33,32 @@ def metric_match(rebuilt,recorded):
         elif isinstance(value,(int,float,bool)):close([value],[other],'Metric mismatch: '+key,atol=1e-12)
 
 
+def validate_cleanup_receipt(scope,manifests):
+    """Check that every deletion receipt covers only official projection inputs."""
+    receipt=load(scope/'projection_cleanup.json')
+    if receipt['status']!='REMOVED':raise ValueError('Projection cleanup incomplete')
+    if {str(Path(p).resolve()) for p in receipt['model_manifests']}!={str(Path(p).resolve()) for p in manifests}:
+        raise ValueError('Cleanup model membership differs')
+    allowed={}
+    for manifest in manifests:
+        manifest=Path(manifest);engine=load(manifest)
+        original=Path(engine['input_paths']['projection_csv']).resolve()
+        if original!= (scope/'projection.csv').resolve():raise ValueError('Projection scope differs')
+        allowed[str(original)]={'sha256':engine['inputs']['projection']['sha256']}
+        for name,meta in engine['outputs'].items():
+            path=manifest.parent/name
+            if path.parent==manifest.parent/'projection_inputs' and path.name.startswith('projection_part') and path.suffix=='.csv':
+                allowed[str(path.resolve())]=meta
+    if len(receipt['files'])!=len({r['path'] for r in receipt['files']}):raise ValueError('Duplicate cleanup records')
+    for record in receipt['files']:
+        path=Path(record['path']).resolve();key=str(path)
+        if key not in allowed or record['sha256']!=allowed[key]['sha256']:raise ValueError('Receipt is not a verified projection input')
+        if path.exists():raise ValueError('Projection cleanup incomplete')
+        if 'bytes' in allowed[key] and record['bytes']!=allowed[key]['bytes']:raise ValueError('Cleanup byte count differs')
+    if receipt['bytes']!=sum(r['bytes'] for r in receipt['files']):raise ValueError('Cleanup total differs')
+    return receipt
+
+
 def prediction_values(engine,expected_coordinates=None):
     pieces=[];offset=0
     for path in engine['prediction_files']:
@@ -122,8 +148,7 @@ def scope_audit(checkpoint,run,ctx,plan,config,consumed,parent_run):
         if sha256(provenance['engine_manifest'])!=provenance['engine_manifest_sha256'] or provenance['tune_groups']!=fold['fit_groups'] or provenance['calibrate_groups']:
             raise ValueError('Refit engine/tuning provenance differs')
     consumed.update([checkpoint,scope/'selection.json',scope/'projection_cleanup.json'])
-    receipt=load(scope/'projection_cleanup.json')
-    if receipt['status']!='REMOVED' or any(Path(r['path']).exists() for r in receipt['files']):raise ValueError('Projection cleanup incomplete')
+    receipt=validate_cleanup_receipt(scope,[r['artifact'] for r in records])
     return {'season':season,'variant':variant,'scope':label,'stage':stage,'background':background,'candidate_count':len(candidates),
         'selected_count':len(selected),'predictors':';'.join(selected),'train_presence_n':len(train),'train_background_n':len(bg),'models':len(records),
         'cleaned_bytes':receipt['bytes'],'candidate_schema_and_fit_only_selection_verified':True,'paired_parent_fit_cells_equal':True},numerical,refit_prediction
