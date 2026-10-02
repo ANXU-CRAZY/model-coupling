@@ -1,0 +1,32 @@
+{
+  "status": "EXPLORATORY_METHODS_REVIEWED_HQ_VALUES_NOT_ADMITTED",
+  "review_date": "2026-10-02",
+  "review_document": "docs/WorkBuddy交接独立审计.md",
+  "audit_results": "local_work/zhengzhou_pilot/handoff_workbuddy_audit_003",
+  "historical_phase_outputs": "local_work/zhengzhou_pilot/parameter_derivation_audit_001",
+  "historical_sources_saved_before_correction": true,
+  "historical_profile_is_valid_lst_ablation": false,
+  "historical_profile_is_intrinsic_hj": false,
+  "statistical_identifiability_established": false,
+  "eligible_for_official_run": false,
+  "real_independent_supervision_labels": 0,
+  "historical_77_sightings_is_power_requirement": false,
+  "class_name_crosswalk_confirmed": false,
+  "research_aoi_intent_from_handoff": "Zhengzhou administrative area",
+  "candidate_boundary_datum_independently_validated": false,
+  "corrected_scripts_refitted_on_real_data": false,
+  "quantitative_diagnostics_adopted": [
+    "Tie-aware rank correlation",
+    "OLS VIF using all other covariates",
+    "Season and class coverage with real square-kilometre denominators",
+    "Survey visit design with effort, nondetection and accessibility",
+    "Per-fit feature schema and fit-domain profiling"
+  ],
+  "do_not_infer": [
+    "Classifier surface rank stability establishes InVEST H_j",
+    "Background sample-membership label is a true absence",
+    "A fixed sightings quota establishes calibration or detection correction",
+    "Third-party team membership alone establishes independent supervision",
+    "AOI overlap alone establishes geographic datum"
+  ]
+}
